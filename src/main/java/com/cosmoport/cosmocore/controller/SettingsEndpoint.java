@@ -1,6 +1,7 @@
 package com.cosmoport.cosmocore.controller;
 
 
+import com.cosmoport.cosmocore.Constants;
 import com.cosmoport.cosmocore.controller.dto.ResultDto;
 import com.cosmoport.cosmocore.events.ReloadMessage;
 import com.cosmoport.cosmocore.repository.SettingsRepository;
@@ -14,7 +15,7 @@ import java.util.Set;
 @RequestMapping("/settings")
 public class SettingsEndpoint {
 
-    private final Set<String> protectedSettings = Set.of("password", "sync_server_key");
+    private final Set<String> protectedSettings = Set.of(Constants.PASSWORD, Constants.SYNC_SERVER_KEY);
 
     private final SettingsRepository settingsRepository;
     private final ApplicationEventPublisher applicationEventPublisher;

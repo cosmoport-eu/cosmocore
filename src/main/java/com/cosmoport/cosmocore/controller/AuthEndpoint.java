@@ -1,5 +1,6 @@
 package com.cosmoport.cosmocore.controller;
 
+import com.cosmoport.cosmocore.Constants;
 import com.cosmoport.cosmocore.controller.dto.ResultDto;
 import com.cosmoport.cosmocore.model.SettingsEntity;
 import com.cosmoport.cosmocore.repository.SettingsRepository;
@@ -18,13 +19,13 @@ public class AuthEndpoint {
 
     @PostMapping("/check")
     public ResultDto check(@RequestBody PasswordDto password) {
-        final SettingsEntity passwordEntity = settingsRepository.findByParam("password").orElseThrow();
+        final SettingsEntity passwordEntity = settingsRepository.findByParam(Constants.PASSWORD).orElseThrow();
         return new ResultDto(passwordEntity.getValue().equals(password.pwd()));
     }
 
     @PostMapping("/set")
     public ResultDto set(@RequestBody PasswordDto password) {
-        settingsRepository.findByParam("password").ifPresentOrElse(settingsEntity -> {
+        settingsRepository.findByParam(Constants.PASSWORD).ifPresentOrElse(settingsEntity -> {
             settingsEntity.setValue(password.pwd());
             settingsRepository.save(settingsEntity);
         }, () -> {throw new IllegalStateException("Password not found");});
