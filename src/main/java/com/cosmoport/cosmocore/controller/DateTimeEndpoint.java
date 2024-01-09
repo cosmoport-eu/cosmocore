@@ -17,9 +17,5 @@ public class DateTimeEndpoint {
     }
 
     public record DateTimeDto(long timestamp) {
-        @JsonCreator
-        public DateTimeDto(@JsonProperty("timestamp") long timestamp) {
-            this.timestamp = timestamp;
-        }
     }
 }

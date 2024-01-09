@@ -133,17 +133,9 @@ public class SyncEndpoint {
         }
     }
 
-    public record SyncAddEventDto(String key, EventDtoRequest event,
+    public record SyncAddEventDto(String key,
+                                  EventDtoRequest event,
                                   String timestamp) implements HasAuthKey {
-        @JsonCreator
-        public SyncAddEventDto(@JsonProperty("key") String key,
-                               @JsonProperty("event") EventDtoRequest event,
-                               @JsonProperty("timestamp") String timestamp) {
-            this.key = key;
-            this.event = event;
-            this.timestamp = timestamp;
-        }
-
         @Override
         public String key() {
             return null;

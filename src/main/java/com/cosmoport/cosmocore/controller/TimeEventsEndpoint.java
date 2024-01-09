@@ -159,11 +159,6 @@ public class TimeEventsEndpoint {
     }
 
     public record CreateEventSubTypeRequestDto(String name, String description) {
-        @JsonCreator
-        public CreateEventSubTypeRequestDto(@JsonProperty("name") String name, @JsonProperty("description") String description) {
-            this.name = name;
-            this.description = description;
-        }
     }
 
     public record EventTypeSaveResultDto(List<EventTypeCategoryDto> eventTypeCategories,
