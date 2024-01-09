@@ -16,4 +16,6 @@ public class EventStateEntity {
     @Basic
     @Column(name = "i18n_state")
     private Integer i18NState;
+    @Column(name = "i18n_code")
+    private String code;
 }

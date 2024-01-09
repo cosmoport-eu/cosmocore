@@ -6,12 +6,15 @@ import com.cosmoport.cosmocore.events.TimeoutUpdateMessage;
 import com.cosmoport.cosmocore.model.I18NEntity;
 import com.cosmoport.cosmocore.model.LocaleEntity;
 import com.cosmoport.cosmocore.model.TranslationEntity;
+import com.cosmoport.cosmocore.model.TranslationsEntity;
 import com.cosmoport.cosmocore.repository.I18NRepository;
 import com.cosmoport.cosmocore.repository.LocaleRepository;
 import com.cosmoport.cosmocore.repository.TranslationRepository;
+import com.cosmoport.cosmocore.repository.TranslationsRepository;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -29,19 +32,23 @@ import java.util.stream.Collectors;
 public class TranslationEndpoint {
     private final TranslationRepository translationRepository;
     private final I18NRepository i18NRepository;
+    private final TranslationsRepository translationsRepository;
     private final LocaleRepository localeRepository;
     private final ApplicationEventPublisher eventBus;
 
     public TranslationEndpoint(TranslationRepository translationRepository,
                                I18NRepository i18NRepository,
+                               TranslationsRepository translationsRepository,
                                LocaleRepository localeRepository,
                                ApplicationEventPublisher eventBus) {
         this.translationRepository = translationRepository;
         this.i18NRepository = i18NRepository;
+        this.translationsRepository = translationsRepository;
         this.localeRepository = localeRepository;
         this.eventBus = eventBus;
     }
 
+    @Deprecated
     @PostMapping("/locale")
     public LocaleDto createLocale(final LocaleDto locale) {
         final LocaleEntity localeEntity = new LocaleEntity();
@@ -118,6 +125,14 @@ public class TranslationEndpoint {
             return new TranslationDto(translationEntity.getId(), translationEntity.getI18NId(), translationEntity.getLocaleId(), translationEntity.getTrText(),
                     new I18nDto(entity.getId(), entity.getTag(), entity.isExternal(), entity.getDescription(), entity.getParams()));
         }).toList();
+    }
+
+    @GetMapping("/{locale}")
+    @Operation(summary = "Get translations map (code to text) for locale (ru, en, etc)")
+    public Map<String, String> getTranslationsMap(@PathVariable("locale") String locale) {
+        final LocaleEntity localeEntity = localeRepository.findByCode(locale).orElseThrow();
+        return translationsRepository.findAllByLocaleId(localeEntity.getId()).stream()
+                .collect(Collectors.toMap(TranslationsEntity::getCode, TranslationsEntity::getText));
     }
 
     @GetMapping

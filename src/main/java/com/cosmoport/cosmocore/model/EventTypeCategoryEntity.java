@@ -22,5 +22,6 @@ public class EventTypeCategoryEntity {
     @Basic
     @Column(name = "COLOR")
     private String color;
-
+    @Column(name = "i18n_code")
+    private String code;
 }

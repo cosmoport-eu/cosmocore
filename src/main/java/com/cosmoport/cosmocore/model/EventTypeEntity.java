@@ -31,4 +31,8 @@ public class EventTypeEntity {
     @Basic
     @Column(name = "default_cost")
     private double defaultCost;
+    @Column(name = "i18n_name_code")
+    private String nameCode;
+    @Column(name = "i18n_desc_code")
+    private String descCode;
 }
