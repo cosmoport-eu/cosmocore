@@ -19,7 +19,8 @@ public class TranslationEntity {
     @Basic
     @Column(name = "locale_id")
     private int localeId;
+    private String code;
     @Basic
     @Column(name = "tr_text")
-    private String trText;
+    private String text;
 }

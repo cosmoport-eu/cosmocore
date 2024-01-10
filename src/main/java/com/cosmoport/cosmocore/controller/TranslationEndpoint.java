@@ -6,11 +6,9 @@ import com.cosmoport.cosmocore.events.TimeoutUpdateMessage;
 import com.cosmoport.cosmocore.model.I18NEntity;
 import com.cosmoport.cosmocore.model.LocaleEntity;
 import com.cosmoport.cosmocore.model.TranslationEntity;
-import com.cosmoport.cosmocore.model.TranslationsEntity;
 import com.cosmoport.cosmocore.repository.I18NRepository;
 import com.cosmoport.cosmocore.repository.LocaleRepository;
 import com.cosmoport.cosmocore.repository.TranslationRepository;
-import com.cosmoport.cosmocore.repository.TranslationsRepository;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,18 +30,15 @@ import java.util.stream.Collectors;
 public class TranslationEndpoint {
     private final TranslationRepository translationRepository;
     private final I18NRepository i18NRepository;
-    private final TranslationsRepository translationsRepository;
     private final LocaleRepository localeRepository;
     private final ApplicationEventPublisher eventBus;
 
     public TranslationEndpoint(TranslationRepository translationRepository,
                                I18NRepository i18NRepository,
-                               TranslationsRepository translationsRepository,
                                LocaleRepository localeRepository,
                                ApplicationEventPublisher eventBus) {
         this.translationRepository = translationRepository;
         this.i18NRepository = i18NRepository;
-        this.translationsRepository = translationsRepository;
         this.localeRepository = localeRepository;
         this.eventBus = eventBus;
     }
@@ -63,7 +58,7 @@ public class TranslationEndpoint {
                     final TranslationEntity newTranslation = new TranslationEntity();
                     newTranslation.setLocaleId(newLocale.getId());
                     newTranslation.setI18NId(translationEntity.getI18NId());
-                    newTranslation.setTrText(translationEntity.getTrText());
+                    newTranslation.setText(translationEntity.getText());
                     return newTranslation;
                 })
                 .toList();
@@ -108,7 +103,7 @@ public class TranslationEndpoint {
     public ResultDto updateTranslation(@PathVariable("translationId") int translationId,
                                        TextValueUpdateRequestDto requestDto) {
         return new ResultDto(translationRepository.findById(translationId).map(translationEntity -> {
-            translationEntity.setTrText(requestDto.text());
+            translationEntity.setText(requestDto.text());
             translationRepository.save(translationEntity);
             eventBus.publishEvent(new ReloadMessage(this));
             return true;
@@ -122,7 +117,7 @@ public class TranslationEndpoint {
                 .collect(Collectors.toMap(I18NEntity::getId, Function.identity()));
         return translationRepository.findAllByLocaleId(localeId).stream().map(translationEntity -> {
             final I18NEntity entity = i18NMap.get(translationEntity.getI18NId());
-            return new TranslationDto(translationEntity.getId(), translationEntity.getI18NId(), translationEntity.getLocaleId(), translationEntity.getTrText(),
+            return new TranslationDto(translationEntity.getId(), translationEntity.getI18NId(), translationEntity.getLocaleId(), translationEntity.getText(),
                     new I18nDto(entity.getId(), entity.getTag(), entity.isExternal(), entity.getDescription(), entity.getParams()));
         }).toList();
     }
@@ -131,8 +126,8 @@ public class TranslationEndpoint {
     @Operation(summary = "Get translations map (code to text) for locale (ru, en, etc)")
     public Map<String, String> getTranslationsMap(@PathVariable("locale") String locale) {
         final LocaleEntity localeEntity = localeRepository.findByCode(locale).orElseThrow();
-        return translationsRepository.findAllByLocaleId(localeEntity.getId()).stream()
-                .collect(Collectors.toMap(TranslationsEntity::getCode, TranslationsEntity::getText));
+        return translationRepository.findAllByLocaleId(localeEntity.getId()).stream()
+                .collect(Collectors.toMap(TranslationEntity::getCode, TranslationEntity::getText));
     }
 
     @GetMapping
@@ -158,9 +153,9 @@ public class TranslationEndpoint {
     @SneakyThrows
     private List<String> getValues(final TranslationEntity translation, I18NEntity i18NEntity) {
         if ("json_array".equals(i18NEntity.getParams())) {
-            return Arrays.asList(new ObjectMapper().readValue(translation.getTrText(), String[].class));
+            return Arrays.asList(new ObjectMapper().readValue(translation.getText(), String[].class));
         } else {
-            return Collections.singletonList(translation.getTrText());
+            return Collections.singletonList(translation.getText());
         }
     }
 

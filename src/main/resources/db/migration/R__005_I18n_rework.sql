@@ -21,21 +21,8 @@ alter table event_type_category add column i18n_code varchar(255);
 update event_type_category set i18n_code = (select tag from i18n where id = event_type_category.i18n_event_type_category_name)
 where exists (select * from i18n where i18n.id = event_type_category.i18n_event_type_category_name);
 
-CREATE TABLE TRANSLATIONS
-(
-    id        INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    locale_id INTEGER NOT NULL,
-    code      TEXT    NOT NULL,
-    text      TEXT    NOT NULL,
-
-    CONSTRAINT unique_code_locale UNIQUE (code, locale_id),
-
-    FOREIGN KEY (locale_id) REFERENCES LOCALE (id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
-);
-
-insert into translations (locale_id, code, text)
-select t.locale_id, i.tag, t.tr_text from TRANSLATION t join i18n i on t.i18n_id = i.id;
+alter table translation add column code varchar(255);
+update translation set code = (select tag from i18n where id = translation.i18n_id)
+where exists (select * from i18n where i18n.id = translation.i18n_id);
 
 
