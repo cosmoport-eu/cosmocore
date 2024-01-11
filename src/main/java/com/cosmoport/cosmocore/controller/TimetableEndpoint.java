@@ -262,7 +262,7 @@ public class TimetableEndpoint {
         @JsonCreator
         public TicketsUpdateRequestDto(@JsonProperty("id") int id,
                                        @JsonProperty("tickets") int tickets,
-                                       @JsonProperty("force_open") boolean forceOpen) {
+                                       @JsonProperty("forceOpen") boolean forceOpen) {
             this.id = id;
             this.tickets = tickets;
             this.forceOpen = forceOpen;

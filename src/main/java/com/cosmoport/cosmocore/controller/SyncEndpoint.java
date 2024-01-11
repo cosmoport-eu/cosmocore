@@ -123,7 +123,7 @@ public class SyncEndpoint {
     public record SyncTicketsDto(String key, int eventId, int value, String timestamp) implements HasAuthKey {
         @JsonCreator
         public SyncTicketsDto(@JsonProperty("key") String key,
-                              @JsonProperty("event_id") int eventId,
+                              @JsonProperty("eventId") int eventId,
                               @JsonProperty("value") int value,
                               @JsonProperty("timestamp") String timestamp) {
             this.key = key;

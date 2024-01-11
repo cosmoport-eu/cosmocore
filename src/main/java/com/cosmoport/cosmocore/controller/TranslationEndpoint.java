@@ -175,10 +175,10 @@ public class TranslationEndpoint {
         @JsonCreator
         public LocaleDto(@JsonProperty("id") int id,
                          @JsonProperty("code") String code,
-                         @JsonProperty("is_default") boolean isDefault,
-                         @JsonProperty("locale_description") String localeDescription,
+                         @JsonProperty("isDefault") boolean isDefault,
+                         @JsonProperty("localeDescription") String localeDescription,
                          @JsonProperty("show") boolean show,
-                         @JsonProperty("show_time") int showTime) {
+                         @JsonProperty("showTime") int showTime) {
             this.show = show;
             this.showTime = showTime;
             this.id = id;

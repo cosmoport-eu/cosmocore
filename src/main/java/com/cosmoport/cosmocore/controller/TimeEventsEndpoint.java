@@ -100,7 +100,7 @@ public class TimeEventsEndpoint {
     }
 
     public record EventReferenceDataDto(List<EventTypeDto> types,
-                                        @JsonProperty("type_categories") List<EventTypeCategoryDto> typeCategories,
+                                        @JsonProperty("typeCategories") List<EventTypeCategoryDto> typeCategories,
                                         List<EventStatusDto> statuses,
                                         List<EventStateDto> states) {
     }
@@ -140,13 +140,13 @@ public class TimeEventsEndpoint {
                                             int defaultRepeatInterval,
                                             double defaultCost) {
         @JsonCreator
-        public CreateEventTypeRequestDto(@JsonProperty("category_id") int categoryId,
+        public CreateEventTypeRequestDto(@JsonProperty("categoryId") int categoryId,
                                          @JsonProperty("name") String name,
                                          @JsonProperty("description") String description,
                                          @JsonProperty("subtypes") List<CreateEventSubTypeRequestDto> subtypes,
-                                         @JsonProperty("default_duration") int defaultDuration,
-                                         @JsonProperty("default_repeat_interval") int defaultRepeatInterval,
-                                         @JsonProperty("default_cost") double defaultCost) {
+                                         @JsonProperty("defaultDuration") int defaultDuration,
+                                         @JsonProperty("defaultRepeatInterval") int defaultRepeatInterval,
+                                         @JsonProperty("defaultCost") double defaultCost) {
             this.categoryId = categoryId;
             // trim
             this.name = (name != null) ? name.trim() : null;
@@ -165,8 +165,8 @@ public class TimeEventsEndpoint {
                                          List<EventTypeDto> eventTypes) {
         @JsonCreator
         public EventTypeSaveResultDto(
-                @JsonProperty("event_type_categories") List<EventTypeCategoryDto> eventTypeCategories,
-                @JsonProperty("event_types") List<EventTypeDto> eventTypes) {
+                @JsonProperty("eventTypeCategories") List<EventTypeCategoryDto> eventTypeCategories,
+                @JsonProperty("eventTypes") List<EventTypeDto> eventTypes) {
             this.eventTypeCategories = eventTypeCategories;
             this.eventTypes = eventTypes;
         }
