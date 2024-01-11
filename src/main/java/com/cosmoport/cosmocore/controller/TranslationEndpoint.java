@@ -9,11 +9,7 @@ import com.cosmoport.cosmocore.model.TranslationEntity;
 import com.cosmoport.cosmocore.repository.I18NRepository;
 import com.cosmoport.cosmocore.repository.LocaleRepository;
 import com.cosmoport.cosmocore.repository.TranslationRepository;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -43,12 +39,12 @@ public class TranslationEndpoint {
     }
 
     @PostMapping("/locale")
-    public LocaleDto createLocale(final LocaleDto locale) {
+    public LocaleDto createLocale(@RequestBody LocaleDto locale) {
         final LocaleEntity localeEntity = new LocaleEntity();
         localeEntity.setDefault(false);
-        localeEntity.setCode(locale.getCode());
+        localeEntity.setCode(locale.code());
         localeEntity.setShow(true);
-        localeEntity.setLocaleDescription(locale.getLocaleDescription());
+        localeEntity.setLocaleDescription(locale.localeDescription());
         final LocaleEntity newLocale = localeRepository.save(localeEntity);
 
         final List<TranslationEntity> neDefaultTranslations = translationRepository.findAllByLocaleId(1).stream()
@@ -68,11 +64,11 @@ public class TranslationEndpoint {
     }
 
     @PostMapping("/locale/show")
-    public LocaleDto setLocaleShowData(final LocaleDto locale) {
-        return localeRepository.findById(locale.getId())
+    public LocaleDto setLocaleShowData(@RequestBody LocaleDto locale) {
+        return localeRepository.findById(locale.id())
                 .map(localeEntity -> {
-                    localeEntity.setShow(locale.isShow());
-                    localeEntity.setShowTime(locale.getShowTime());
+                    localeEntity.setShow(locale.show());
+                    localeEntity.setShowTime(locale.showTime());
                     LocaleEntity newLocale = localeRepository.save(localeEntity);
                     eventBus.publishEvent(new TimeoutUpdateMessage(this));
                     return newLocale;
@@ -99,7 +95,7 @@ public class TranslationEndpoint {
 
     @PostMapping("/update/{translationId}")
     public ResultDto updateTranslation(@PathVariable("translationId") int translationId,
-                                       TextValueUpdateRequestDto requestDto) {
+                                       @RequestBody TextValueUpdateRequestDto requestDto) {
         return new ResultDto(translationRepository.findById(translationId).map(translationEntity -> {
             translationEntity.setTrText(requestDto.text());
             translationRepository.save(translationEntity);
@@ -162,29 +158,7 @@ public class TranslationEndpoint {
     }
 
 
-    @Getter
-    @Setter
-    public static final class LocaleDto {
-        private final int id;
-        private final String code;
-        private final boolean isDefault;
-        private final String localeDescription;
-        private final boolean show;
-        private final int showTime;
-
-        @JsonCreator
-        public LocaleDto(@JsonProperty("id") int id,
-                         @JsonProperty("code") String code,
-                         @JsonProperty("is_default") boolean isDefault,
-                         @JsonProperty("locale_description") String localeDescription,
-                         @JsonProperty("show") boolean show,
-                         @JsonProperty("show_time") int showTime) {
-            this.show = show;
-            this.showTime = showTime;
-            this.id = id;
-            this.code = code;
-            this.isDefault = isDefault;
-            this.localeDescription = localeDescription;
-        }
+    public record LocaleDto(int id, String code, boolean isDefault, String localeDescription, boolean show,
+                            int showTime) {
     }
 }

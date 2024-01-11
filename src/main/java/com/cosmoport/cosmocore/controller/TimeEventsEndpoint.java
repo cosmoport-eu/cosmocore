@@ -5,8 +5,6 @@ import com.cosmoport.cosmocore.repository.EventStateRepository;
 import com.cosmoport.cosmocore.repository.EventStatusRepository;
 import com.cosmoport.cosmocore.repository.EventTypeCategoryRepository;
 import com.cosmoport.cosmocore.repository.EventTypeRepository;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.bind.annotation.*;
 
@@ -100,7 +98,7 @@ public class TimeEventsEndpoint {
     }
 
     public record EventReferenceDataDto(List<EventTypeDto> types,
-                                        @JsonProperty("type_categories") List<EventTypeCategoryDto> typeCategories,
+                                        List<EventTypeCategoryDto> typeCategories,
                                         List<EventStatusDto> statuses,
                                         List<EventStateDto> states) {
     }
@@ -139,23 +137,6 @@ public class TimeEventsEndpoint {
                                             int defaultDuration,
                                             int defaultRepeatInterval,
                                             double defaultCost) {
-        @JsonCreator
-        public CreateEventTypeRequestDto(@JsonProperty("category_id") int categoryId,
-                                         @JsonProperty("name") String name,
-                                         @JsonProperty("description") String description,
-                                         @JsonProperty("subtypes") List<CreateEventSubTypeRequestDto> subtypes,
-                                         @JsonProperty("default_duration") int defaultDuration,
-                                         @JsonProperty("default_repeat_interval") int defaultRepeatInterval,
-                                         @JsonProperty("default_cost") double defaultCost) {
-            this.categoryId = categoryId;
-            // trim
-            this.name = (name != null) ? name.trim() : null;
-            this.description = description;
-            this.subtypes = subtypes;
-            this.defaultDuration = defaultDuration;
-            this.defaultRepeatInterval = defaultRepeatInterval;
-            this.defaultCost = defaultCost;
-        }
     }
 
     public record CreateEventSubTypeRequestDto(String name, String description) {
@@ -163,13 +144,6 @@ public class TimeEventsEndpoint {
 
     public record EventTypeSaveResultDto(List<EventTypeCategoryDto> eventTypeCategories,
                                          List<EventTypeDto> eventTypes) {
-        @JsonCreator
-        public EventTypeSaveResultDto(
-                @JsonProperty("event_type_categories") List<EventTypeCategoryDto> eventTypeCategories,
-                @JsonProperty("event_types") List<EventTypeDto> eventTypes) {
-            this.eventTypeCategories = eventTypeCategories;
-            this.eventTypes = eventTypes;
-        }
     }
 
 
