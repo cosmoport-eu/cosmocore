@@ -9,10 +9,9 @@ import com.cosmoport.cosmocore.events.ReloadMessage;
 import com.cosmoport.cosmocore.model.TimetableEntity;
 import com.cosmoport.cosmocore.repository.SettingsRepository;
 import com.cosmoport.cosmocore.repository.TimeTableRepository;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -33,7 +32,7 @@ public class SyncEndpoint {
     }
 
     @PostMapping("/tickets")
-    public ResultDto syncTickets(final SyncTicketsDto syncTickets) {
+    public ResultDto syncTickets(@RequestBody SyncTicketsDto syncTickets) {
         auth(syncTickets);
 
         timeTableRepository.findById(syncTickets.eventId()).ifPresentOrElse(
@@ -42,7 +41,7 @@ public class SyncEndpoint {
                     timeTableRepository.save(timeTableEntity);
                 },
                 () -> {
-                    throw new RuntimeException("Event not found");
+                    throw new IllegalArgumentException("Event not found");
                 }
         );
 
@@ -50,7 +49,7 @@ public class SyncEndpoint {
     }
 
     @PostMapping("/add/event")
-    public EventDtoResponse create(final SyncAddEventDto syncAddEvent) {
+    public EventDtoResponse create(@RequestBody SyncAddEventDto syncAddEvent) {
         auth(syncAddEvent);
         final TimetableEntity timetableEntity = timeTableRepository.findById(syncAddEvent.event().id()).orElse(
                 new TimetableEntity(syncAddEvent.event().id(),
@@ -121,16 +120,6 @@ public class SyncEndpoint {
 
 
     public record SyncTicketsDto(String key, int eventId, int value, String timestamp) implements HasAuthKey {
-        @JsonCreator
-        public SyncTicketsDto(@JsonProperty("key") String key,
-                              @JsonProperty("eventId") int eventId,
-                              @JsonProperty("value") int value,
-                              @JsonProperty("timestamp") String timestamp) {
-            this.key = key;
-            this.eventId = eventId;
-            this.value = value;
-            this.timestamp = timestamp;
-        }
     }
 
     public record SyncAddEventDto(String key,

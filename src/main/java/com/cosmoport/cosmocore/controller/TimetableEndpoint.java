@@ -14,8 +14,6 @@ import com.cosmoport.cosmocore.repository.EventTypeRepository;
 import com.cosmoport.cosmocore.repository.TimeTableRepository;
 import com.cosmoport.cosmocore.service.RemoteSync;
 import com.cosmoport.cosmocore.service.Types;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.bind.annotation.*;
 
@@ -109,8 +107,8 @@ public class TimetableEndpoint {
     }
 
     @GetMapping("/suggest/next")
-    public TimeSuggestionDto getSuggestion(@PathVariable("gate") int gateId,
-                                           @PathVariable("date") final String date) {
+    public TimeSuggestionDto getSuggestion(@RequestParam("gateId") int gateId,
+                                           @RequestParam("date") final String date) {
         if (gateId <= 0) {
             throw new ValidationException("Set the gate number.");
         }
@@ -259,14 +257,6 @@ public class TimetableEndpoint {
     }
 
     public record TicketsUpdateRequestDto(int id, int tickets, boolean forceOpen) {
-        @JsonCreator
-        public TicketsUpdateRequestDto(@JsonProperty("id") int id,
-                                       @JsonProperty("tickets") int tickets,
-                                       @JsonProperty("forceOpen") boolean forceOpen) {
-            this.id = id;
-            this.tickets = tickets;
-            this.forceOpen = forceOpen;
-        }
     }
 
     public record TimeSuggestionDto(int time) {
