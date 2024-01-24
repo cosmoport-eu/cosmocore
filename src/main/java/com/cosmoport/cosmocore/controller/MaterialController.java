@@ -5,6 +5,7 @@ import com.cosmoport.cosmocore.model.TranslationEntity;
 import com.cosmoport.cosmocore.repository.LocaleRepository;
 import com.cosmoport.cosmocore.repository.MaterialRepository;
 import com.cosmoport.cosmocore.repository.TranslationRepository;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -57,5 +58,34 @@ public class MaterialController {
         }, () -> {
             throw new IllegalArgumentException("Material not found");
         });
+    }
+
+    @GetMapping
+    public List<MaterialDto> getAll(@RequestParam("localeId") int localeId) {
+        return materialRepository.findAll().stream()
+                .map(facilityEntity -> {
+                    final TranslationEntity translation =
+                            translationRepository.findByLocaleIdAndCode(localeId, facilityEntity.getCode()).orElseThrow();
+                    return new MaterialDto(facilityEntity.getId(), facilityEntity.getCode(), translation.getText());
+                }).toList();
+    }
+
+    @Transactional
+    @PutMapping("/{id}")
+    @Operation(summary = "Update i18n code")
+    public void update(@PathVariable("id") int id, @RequestBody String materialCode) {
+        materialRepository.findById(id).ifPresentOrElse(materialEntity -> {
+            final List<TranslationEntity> translations = translationRepository.findAllByCode(materialEntity.getCode());
+            translations.forEach(translation -> translation.setCode(materialCode));
+            translationRepository.saveAll(translations);
+
+            materialEntity.setCode(materialCode);
+            materialRepository.save(materialEntity);
+        }, () -> {
+            throw new IllegalArgumentException("Facility not found");
+        });
+    }
+
+    public record MaterialDto(int id, String code, String name) {
     }
 }
