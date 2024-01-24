@@ -4,20 +4,18 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.UUID;
+
 @Setter
 @Getter
 @Entity
-@Table(name = "TRANSLATION")
-public class TranslationEntity {
+@Table(name = "FACILITY")
+public class FacilityEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
     @Column(name = "id")
     private int id;
-    @Basic
-    @Column(name = "locale_id")
-    private int localeId;
-    private String code;
-    @Basic
-    @Column(name = "tr_text")
-    private String text;
+
+    @Column(name = "i18n_code")
+    private String code = UUID.randomUUID().toString();
 }

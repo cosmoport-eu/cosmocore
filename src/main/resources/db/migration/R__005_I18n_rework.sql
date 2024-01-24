@@ -26,3 +26,23 @@ update translation set code = (select tag from i18n where id = translation.i18n_
 where exists (select * from i18n where i18n.id = translation.i18n_id);
 
 
+create table TRANSLATION_dg_tmp
+(
+    id        INTEGER         not null
+        primary key autoincrement,
+    locale_id INTEGER         not null
+        references LOCALE
+            on update cascade on delete cascade,
+    tr_text   TEXT default '' not null,
+    code      varchar(255)    not null
+);
+
+insert into TRANSLATION_dg_tmp(id, locale_id, tr_text, code)
+select id, locale_id, tr_text, code
+from TRANSLATION;
+
+drop table TRANSLATION;
+
+alter table TRANSLATION_dg_tmp
+    rename to TRANSLATION;
+

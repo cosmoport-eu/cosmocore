@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface TranslationRepository extends JpaRepository<TranslationEntity, Integer> {
     List<TranslationEntity> findAllByLocaleId(long localeId);
+
+    void deleteAllByCode(String code);
 }
