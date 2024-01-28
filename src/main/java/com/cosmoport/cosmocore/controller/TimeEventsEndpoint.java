@@ -130,7 +130,4 @@ public class TimeEventsEndpoint {
                                 String code) {
     }
 
-    public record CreateEventSubTypeRequestDto(String name, String description) {
-    }
-
 }
