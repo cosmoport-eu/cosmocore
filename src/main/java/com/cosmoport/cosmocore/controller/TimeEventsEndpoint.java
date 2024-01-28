@@ -31,31 +31,32 @@ public class TimeEventsEndpoint {
         this.eventBus = eventBus;
     }
 
+    @Deprecated
     @GetMapping("/reference_data")
     public EventReferenceDataDto getEventReferenceData() {
         return new EventReferenceDataDto(
                 eventTypeRepository.findAll().stream().map(eventTypeEntity -> new EventTypeDto(
                         eventTypeEntity.getId(),
                         eventTypeEntity.getCategoryId(),
-                        eventTypeEntity.getI18NEventTypeName(),
-                        eventTypeEntity.getI18NEventTypeDescription(),
+                        eventTypeEntity.getNameCode(),
+                        eventTypeEntity.getDescCode(),
                         eventTypeEntity.getDefaultDuration(),
                         eventTypeEntity.getDefaultRepeatInterval(),
                         eventTypeEntity.getDefaultCost()
                 )).toList(),
                 eventTypeCategoryRepository.findAll().stream().map(eventTypeCategoryEntity -> new EventTypeCategoryDto(
                         eventTypeCategoryEntity.getId(),
-                        eventTypeCategoryEntity.getI18NEventTypeCategoryName(),
+                        eventTypeCategoryEntity.getCode(),
                         eventTypeCategoryEntity.getParent() == null ? 0 : eventTypeCategoryEntity.getParent(),
                         eventTypeCategoryEntity.getColor()
                 )).toList(),
                 eventStatusRepository.findAll().stream().map(eventStatusEntity -> new EventStatusDto(
                         eventStatusEntity.getId(),
-                        eventStatusEntity.getI18NStatus()
+                        eventStatusEntity.getCode()
                 )).toList(),
                 eventStateRepository.findAll().stream().map(eventStateEntity -> new EventStateDto(
                         eventStateEntity.getId(),
-                        eventStateEntity.getI18NState()
+                        eventStateEntity.getCode()
                 )).toList());
     }
 
@@ -65,8 +66,8 @@ public class TimeEventsEndpoint {
         return eventTypeRepository.findAll().stream().map(eventTypeEntity -> new EventTypeDto(
                 eventTypeEntity.getId(),
                 eventTypeEntity.getCategoryId(),
-                eventTypeEntity.getI18NEventTypeName(),
-                eventTypeEntity.getI18NEventTypeDescription(),
+                eventTypeEntity.getNameCode(),
+                eventTypeEntity.getDescCode(),
                 eventTypeEntity.getDefaultDuration(),
                 eventTypeEntity.getDefaultRepeatInterval(),
                 eventTypeEntity.getDefaultCost()
@@ -85,7 +86,7 @@ public class TimeEventsEndpoint {
     public List<EventStatusDto> getEventStatuses() {
         return eventStatusRepository.findAll().stream().map(eventStatusEntity -> new EventStatusDto(
                 eventStatusEntity.getId(),
-                eventStatusEntity.getI18NStatus()
+                eventStatusEntity.getCode()
         )).toList();
     }
 
@@ -93,7 +94,7 @@ public class TimeEventsEndpoint {
     public List<EventStateDto> getEventStates() {
         return eventStateRepository.findAll().stream().map(eventStateEntity -> new EventStateDto(
                 eventStateEntity.getId(),
-                eventStateEntity.getI18NState()
+                eventStateEntity.getCode()
         )).toList();
     }
 
@@ -105,8 +106,8 @@ public class TimeEventsEndpoint {
 
     public record EventTypeDto(long id,
                                long categoryId,
-                               long i18nEventTypeName,
-                               long i18nEventTypeDescription,
+                               String nameCode,
+                               String descCode,
                                int defaultDuration,
                                int defaultRepeatInterval,
                                double defaultCost) {
@@ -114,37 +115,22 @@ public class TimeEventsEndpoint {
 
 
     public record EventTypeCategoryDto(long id,
-                                       long i18nEventTypeCategoryName,
+                                       String code,
                                        long parent,
                                        String color) {
     }
 
 
     public record EventStatusDto(long id,
-                                 long i18nStatus) {
+                                 String code) {
     }
 
 
     public record EventStateDto(long id,
-                                long i18nState) {
-    }
-
-
-    public record CreateEventTypeRequestDto(int categoryId,
-                                            String name,
-                                            String description,
-                                            List<CreateEventSubTypeRequestDto> subtypes,
-                                            int defaultDuration,
-                                            int defaultRepeatInterval,
-                                            double defaultCost) {
+                                String code) {
     }
 
     public record CreateEventSubTypeRequestDto(String name, String description) {
     }
-
-    public record EventTypeSaveResultDto(List<EventTypeCategoryDto> eventTypeCategories,
-                                         List<EventTypeDto> eventTypes) {
-    }
-
 
 }

@@ -16,10 +16,10 @@ public class EventTypeEntity {
     @Basic
     @Column(name = "category_id")
     private Integer categoryId;
-    @Basic
+    @Deprecated
     @Column(name = "i18n_event_type_name")
     private int i18NEventTypeName;
-    @Basic
+    @Deprecated
     @Column(name = "i18n_event_type_description")
     private Integer i18NEventTypeDescription;
     @Basic
