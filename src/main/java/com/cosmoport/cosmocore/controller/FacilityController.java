@@ -1,5 +1,6 @@
 package com.cosmoport.cosmocore.controller;
 
+import com.cosmoport.cosmocore.controller.dto.ResultDto;
 import com.cosmoport.cosmocore.model.FacilityEntity;
 import com.cosmoport.cosmocore.model.TranslationEntity;
 import com.cosmoport.cosmocore.repository.FacilityRepository;
@@ -30,7 +31,7 @@ public class FacilityController {
     }
 
     @PostMapping
-    public void create(@RequestBody String facilityName) {
+    public ResultDto create(@RequestBody String facilityName) {
         final FacilityEntity entity = new FacilityEntity();
         entity.setCode(TEMP_CODE);
         FacilityEntity savedEntity = facilityRepository.save(entity);
@@ -47,17 +48,19 @@ public class FacilityController {
                 }).toList();
 
         translationRepository.saveAll(newTranslations);
+        return ResultDto.ok();
     }
 
     @Transactional
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable("id") int id) {
+    public ResultDto delete(@PathVariable("id") int id) {
         facilityRepository.findById(id).ifPresentOrElse(facilityEntity -> {
             translationRepository.deleteAllByCode(facilityEntity.getCode());
             facilityRepository.deleteById(id);
         }, () -> {
             throw new IllegalArgumentException("Facility not found");
         });
+        return ResultDto.ok();
     }
 
     @GetMapping
@@ -73,7 +76,7 @@ public class FacilityController {
     @Transactional
     @PutMapping("/{id}")
     @Operation(summary = "Update facility i18n code")
-    public void update(@PathVariable("id") int id, @RequestBody String facilityCode) {
+    public ResultDto update(@PathVariable("id") int id, @RequestBody String facilityCode) {
         facilityRepository.findById(id).ifPresentOrElse(facilityEntity -> {
             final List<TranslationEntity> translations = translationRepository.findAllByCode(facilityEntity.getCode());
             translations.forEach(translation -> translation.setCode(facilityCode));
@@ -84,6 +87,7 @@ public class FacilityController {
         }, () -> {
             throw new IllegalArgumentException("Facility not found");
         });
+        return ResultDto.ok();
     }
 
     public record FacilityDto(int id, String code, String name) {

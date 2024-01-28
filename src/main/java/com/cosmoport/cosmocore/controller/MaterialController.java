@@ -1,5 +1,6 @@
 package com.cosmoport.cosmocore.controller;
 
+import com.cosmoport.cosmocore.controller.dto.ResultDto;
 import com.cosmoport.cosmocore.model.MaterialEntity;
 import com.cosmoport.cosmocore.model.TranslationEntity;
 import com.cosmoport.cosmocore.repository.LocaleRepository;
@@ -30,7 +31,7 @@ public class MaterialController {
     }
 
     @PostMapping
-    public void create(@RequestBody String facilityName) {
+    public ResultDto create(@RequestBody String facilityName) {
         final MaterialEntity entity = new MaterialEntity();
         entity.setCode(TEMP_CODE);
         MaterialEntity savedEntity = materialRepository.save(entity);
@@ -47,17 +48,19 @@ public class MaterialController {
                 }).toList();
 
         translationRepository.saveAll(newTranslations);
+        return ResultDto.ok();
     }
 
     @Transactional
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable("id") int id) {
+    public ResultDto delete(@PathVariable("id") int id) {
         materialRepository.findById(id).ifPresentOrElse(materialEntity -> {
             translationRepository.deleteAllByCode(materialEntity.getCode());
             materialRepository.deleteById(id);
         }, () -> {
             throw new IllegalArgumentException("Material not found");
         });
+        return ResultDto.ok();
     }
 
     @GetMapping
@@ -73,7 +76,7 @@ public class MaterialController {
     @Transactional
     @PutMapping("/{id}")
     @Operation(summary = "Update i18n code")
-    public void update(@PathVariable("id") int id, @RequestBody String materialCode) {
+    public ResultDto update(@PathVariable("id") int id, @RequestBody String materialCode) {
         materialRepository.findById(id).ifPresentOrElse(materialEntity -> {
             final List<TranslationEntity> translations = translationRepository.findAllByCode(materialEntity.getCode());
             translations.forEach(translation -> translation.setCode(materialCode));
@@ -84,6 +87,7 @@ public class MaterialController {
         }, () -> {
             throw new IllegalArgumentException("Facility not found");
         });
+        return ResultDto.ok();
     }
 
     public record MaterialDto(int id, String code, String name) {
