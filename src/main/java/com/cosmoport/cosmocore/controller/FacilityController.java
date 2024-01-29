@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/facility")
@@ -73,6 +74,14 @@ public class FacilityController {
                 }).toList();
     }
 
+    @GetMapping("/all")
+    public List<FacilityDtoWithTranslations> getAllWithTranslations() {
+        return facilityRepository.findAll().stream()
+                .map(entity ->
+                        new FacilityDtoWithTranslations(entity.getId(), entity.getCode(),
+                                translationRepository.getTranslationsMap(entity.getCode()))).toList();
+    }
+
     @Transactional
     @PutMapping("/{id}")
     @Operation(summary = "Update facility i18n code")
@@ -91,5 +100,8 @@ public class FacilityController {
     }
 
     public record FacilityDto(int id, String code, String name) {
+    }
+
+    public record FacilityDtoWithTranslations(int id, String code, Map<Integer, String> translations) {
     }
 }

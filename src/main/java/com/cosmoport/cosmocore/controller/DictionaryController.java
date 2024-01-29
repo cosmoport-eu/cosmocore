@@ -1,6 +1,5 @@
 package com.cosmoport.cosmocore.controller;
 
-import com.cosmoport.cosmocore.model.TranslationEntity;
 import com.cosmoport.cosmocore.repository.*;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,7 +8,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/dictionary")
@@ -39,7 +37,7 @@ public class DictionaryController {
         return eventStateRepository.findAll().stream().map(eventStateEntity -> new EventStateDto(
                 eventStateEntity.getId(),
                 eventStateEntity.getCode(),
-                getTranslationsMap(eventStateEntity.getCode())
+                translationRepository.getTranslationsMap(eventStateEntity.getCode())
         )).toList();
     }
 
@@ -49,7 +47,7 @@ public class DictionaryController {
         return eventStatusRepository.findAll().stream().map(eventStatusEntity -> new EventStatusDto(
                 eventStatusEntity.getId(),
                 eventStatusEntity.getCode(),
-                getTranslationsMap(eventStatusEntity.getCode())
+                translationRepository.getTranslationsMap(eventStatusEntity.getCode())
         )).toList();
     }
 
@@ -60,9 +58,9 @@ public class DictionaryController {
                 eventTypeEntity.getId(),
                 eventTypeEntity.getCategoryId(),
                 eventTypeEntity.getNameCode(),
-                getTranslationsMap(eventTypeEntity.getNameCode()),
+                translationRepository.getTranslationsMap(eventTypeEntity.getNameCode()),
                 eventTypeEntity.getDescCode(),
-                getTranslationsMap(eventTypeEntity.getDescCode()),
+                translationRepository.getTranslationsMap(eventTypeEntity.getDescCode()),
                 eventTypeEntity.getDefaultDuration(),
                 eventTypeEntity.getDefaultRepeatInterval(),
                 eventTypeEntity.getDefaultCost()
@@ -78,13 +76,8 @@ public class DictionaryController {
                 eventTypeCategoryEntity.getCode(),
                 eventTypeCategoryEntity.getParent() == null ? 0 : eventTypeCategoryEntity.getParent(),
                 eventTypeCategoryEntity.getColor(),
-                getTranslationsMap(eventTypeCategoryEntity.getCode())
+                translationRepository.getTranslationsMap(eventTypeCategoryEntity.getCode())
         )).toList();
-    }
-
-    private Map<Integer, String> getTranslationsMap(final String code) {
-        return translationRepository.findAllByCode(code).stream()
-                .collect(Collectors.toMap(TranslationEntity::getLocaleId, TranslationEntity::getText));
     }
 
     public record EventTypeDto(long id,

@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/material")
@@ -73,6 +74,14 @@ public class MaterialController {
                 }).toList();
     }
 
+    @GetMapping("/all")
+    public List<MaterialTranslationsDto> getAllWithTranslations() {
+        return materialRepository.findAll().stream()
+                .map(entity ->
+                        new MaterialTranslationsDto(entity.getId(), entity.getCode(),
+                                translationRepository.getTranslationsMap(entity.getCode()))).toList();
+    }
+
     @Transactional
     @PutMapping("/{id}")
     @Operation(summary = "Update i18n code")
@@ -91,5 +100,8 @@ public class MaterialController {
     }
 
     public record MaterialDto(int id, String code, String name) {
+    }
+
+    public record MaterialTranslationsDto(int id, String code, Map<Integer, String> translations) {
     }
 }
