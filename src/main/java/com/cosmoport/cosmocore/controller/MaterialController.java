@@ -1,6 +1,8 @@
 package com.cosmoport.cosmocore.controller;
 
 import com.cosmoport.cosmocore.controller.dto.ResultDto;
+import com.cosmoport.cosmocore.controller.dto.TranslationDto;
+import com.cosmoport.cosmocore.controller.helper.TranslationHelper;
 import com.cosmoport.cosmocore.model.MaterialEntity;
 import com.cosmoport.cosmocore.model.TranslationEntity;
 import com.cosmoport.cosmocore.repository.LocaleRepository;
@@ -11,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/material")
@@ -79,7 +80,7 @@ public class MaterialController {
         return materialRepository.findAll().stream()
                 .map(entity ->
                         new MaterialTranslationsDto(entity.getId(), entity.getCode(),
-                                translationRepository.getTranslationsMap(entity.getCode()))).toList();
+                                TranslationHelper.getTranslationsByCode(translationRepository, entity.getCode()))).toList();
     }
 
     @Transactional
@@ -102,6 +103,6 @@ public class MaterialController {
     public record MaterialDto(int id, String code, String name) {
     }
 
-    public record MaterialTranslationsDto(int id, String code, Map<Integer, String> translations) {
+    public record MaterialTranslationsDto(int id, String code, List<TranslationDto> translations) {
     }
 }

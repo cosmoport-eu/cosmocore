@@ -92,9 +92,9 @@ public class TranslationEndpoint {
 
     @PostMapping("/update/{translationId}")
     public ResultDto updateTranslation(@PathVariable("translationId") int translationId,
-                                       @RequestBody TextValueUpdateRequestDto requestDto) {
+                                       @RequestBody String text) {
         return new ResultDto(translationRepository.findById(translationId).map(translationEntity -> {
-            translationEntity.setText(requestDto.text());
+            translationEntity.setText(text);
             translationRepository.save(translationEntity);
             eventBus.publishEvent(new ReloadMessage(this));
             return true;
@@ -122,6 +122,27 @@ public class TranslationEndpoint {
             map.computeIfAbsent(locale, k -> new HashMap<>()).put(translation.getCode(), translation.getText());
         }
         return map;
+    }
+
+    @PostMapping
+    @Operation(summary = "Создать перевод. Для каждого языка создается дубликат с таким же текстом")
+    public ResultDto create(@RequestBody TranslationCreateRequestDto request) {
+        final List<TranslationEntity> newTranslations = localeRepository.findAll().stream()
+                .map(localeEntity -> {
+                    final TranslationEntity translation = new TranslationEntity();
+                    translation.setLocaleId(localeEntity.getId());
+                    translation.setCode(request.code());
+                    translation.setText(request.text());
+                    return translation;
+                }).toList();
+
+
+        translationRepository.saveAll(newTranslations);
+        eventBus.publishEvent(new ReloadMessage(this));
+        return ResultDto.ok();
+    }
+
+    public record TranslationCreateRequestDto(int localeId, String code, String text) {
     }
 
     public record TextValueUpdateRequestDto(String text) {

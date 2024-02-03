@@ -1,5 +1,7 @@
 package com.cosmoport.cosmocore.controller;
 
+import com.cosmoport.cosmocore.controller.dto.TranslationDto;
+import com.cosmoport.cosmocore.controller.helper.TranslationHelper;
 import com.cosmoport.cosmocore.repository.*;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -7,7 +9,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/dictionary")
@@ -37,7 +38,7 @@ public class DictionaryController {
         return eventStateRepository.findAll().stream().map(eventStateEntity -> new EventStateDto(
                 eventStateEntity.getId(),
                 eventStateEntity.getCode(),
-                translationRepository.getTranslationsMap(eventStateEntity.getCode())
+                TranslationHelper.getTranslationsByCode(translationRepository, eventStateEntity.getCode())
         )).toList();
     }
 
@@ -47,7 +48,7 @@ public class DictionaryController {
         return eventStatusRepository.findAll().stream().map(eventStatusEntity -> new EventStatusDto(
                 eventStatusEntity.getId(),
                 eventStatusEntity.getCode(),
-                translationRepository.getTranslationsMap(eventStatusEntity.getCode())
+                TranslationHelper.getTranslationsByCode(translationRepository, eventStatusEntity.getCode())
         )).toList();
     }
 
@@ -58,9 +59,9 @@ public class DictionaryController {
                 eventTypeEntity.getId(),
                 eventTypeEntity.getCategoryId(),
                 eventTypeEntity.getNameCode(),
-                translationRepository.getTranslationsMap(eventTypeEntity.getNameCode()),
+                TranslationHelper.getTranslationsByCode(translationRepository, eventTypeEntity.getNameCode()),
                 eventTypeEntity.getDescCode(),
-                translationRepository.getTranslationsMap(eventTypeEntity.getDescCode()),
+                TranslationHelper.getTranslationsByCode(translationRepository, eventTypeEntity.getDescCode()),
                 eventTypeEntity.getDefaultDuration(),
                 eventTypeEntity.getDefaultRepeatInterval(),
                 eventTypeEntity.getDefaultCost()
@@ -76,16 +77,16 @@ public class DictionaryController {
                 eventTypeCategoryEntity.getCode(),
                 eventTypeCategoryEntity.getParent() == null ? 0 : eventTypeCategoryEntity.getParent(),
                 eventTypeCategoryEntity.getColor(),
-                translationRepository.getTranslationsMap(eventTypeCategoryEntity.getCode())
+                TranslationHelper.getTranslationsByCode(translationRepository, eventTypeCategoryEntity.getCode())
         )).toList();
     }
 
     public record EventTypeDto(long id,
                                long categoryId,
                                String nameCode,
-                               Map<Integer, String> nameTranslations,
+                               List<TranslationDto> nameTranslations,
                                String descCode,
-                               Map<Integer, String> descTranslations,
+                               List<TranslationDto> descTranslations,
                                int defaultDuration,
                                int defaultRepeatInterval,
                                double defaultCost) {
@@ -96,19 +97,19 @@ public class DictionaryController {
                                        String code,
                                        long parent,
                                        String color,
-                                       Map<Integer, String> translations) {
+                                       List<TranslationDto> translations) {
     }
 
 
     public record EventStatusDto(long id,
                                  String code,
-                                 Map<Integer, String> translations) {
+                                 List<TranslationDto> translations) {
     }
 
 
     public record EventStateDto(long id,
                                 String code,
-                                Map<Integer, String> translations) {
+                                List<TranslationDto> translations) {
     }
 
 }
