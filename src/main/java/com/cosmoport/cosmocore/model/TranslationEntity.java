@@ -20,6 +20,5 @@ public class TranslationEntity {
     @Basic
     @Column(name = "tr_text")
     private String text;
-
-    //TODO добавить признак isExternal
+    private boolean isExternal;
 }

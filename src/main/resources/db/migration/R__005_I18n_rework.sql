@@ -34,7 +34,9 @@ create table TRANSLATION_dg_tmp
         references LOCALE
             on update cascade on delete cascade,
     tr_text   TEXT default '' not null,
-    code      varchar(255)    not null
+    code      varchar(255)    not null,
+    is_external boolean default false not null,
+    constraint TRANSLATION_CODE_LOCALE unique (code, locale_id)
 );
 
 insert into TRANSLATION_dg_tmp(id, locale_id, tr_text, code)
@@ -46,3 +48,6 @@ drop table TRANSLATION;
 alter table TRANSLATION_dg_tmp
     rename to TRANSLATION;
 
+update TRANSLATION
+set is_external = true
+where code in (select tag from I18N where external = 1);
