@@ -32,24 +32,19 @@ public class MaterialController {
         this.translationRepository = translationRepository;
     }
 
+    @Transactional
     @PostMapping
-    public ResultDto create(@RequestBody String facilityName) {
+    public ResultDto create(@RequestBody String name) {
         final MaterialEntity entity = new MaterialEntity();
         entity.setCode(TEMP_CODE);
         MaterialEntity savedEntity = materialRepository.save(entity);
         savedEntity.setCode(CODE_PREFIX + savedEntity.getId());
         materialRepository.save(savedEntity);
 
-        final List<TranslationEntity> newTranslations = localeRepository.findAll().stream()
-                .map(localeEntity -> {
-                    final TranslationEntity translation = new TranslationEntity();
-                    translation.setLocaleId(localeEntity.getId());
-                    translation.setCode(savedEntity.getCode());
-                    translation.setText(facilityName);
-                    return translation;
-                }).toList();
+        translationRepository.saveAll(
+                TranslationHelper.createTranslationForCodeAndDefaultText(localeRepository, savedEntity.getCode(), name)
+        );
 
-        translationRepository.saveAll(newTranslations);
         return ResultDto.ok();
     }
 

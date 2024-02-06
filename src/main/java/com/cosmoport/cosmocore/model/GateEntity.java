@@ -15,4 +15,11 @@ public class GateEntity {
     private int id;
     @Column(name = "i18n_code")
     private String code;
+
+    public GateEntity() {
+    }
+
+    public GateEntity(String code) {
+        this.code = code;
+    }
 }

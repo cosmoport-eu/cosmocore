@@ -33,23 +33,17 @@ public class FacilityController {
     }
 
     @PostMapping
-    public ResultDto create(@RequestBody String facilityName) {
+    public ResultDto create(@RequestBody String name) {
         final FacilityEntity entity = new FacilityEntity();
         entity.setCode(TEMP_CODE);
         FacilityEntity savedEntity = facilityRepository.save(entity);
         savedEntity.setCode(CODE_PREFIX + savedEntity.getId());
         facilityRepository.save(savedEntity);
 
-        final List<TranslationEntity> newTranslations = localeRepository.findAll().stream()
-                .map(localeEntity -> {
-                    final TranslationEntity translation = new TranslationEntity();
-                    translation.setLocaleId(localeEntity.getId());
-                    translation.setCode(savedEntity.getCode());
-                    translation.setText(facilityName);
-                    return translation;
-                }).toList();
+        translationRepository.saveAll(
+                TranslationHelper.createTranslationForCodeAndDefaultText(localeRepository, savedEntity.getCode(), name)
+        );
 
-        translationRepository.saveAll(newTranslations);
         return ResultDto.ok();
     }
 

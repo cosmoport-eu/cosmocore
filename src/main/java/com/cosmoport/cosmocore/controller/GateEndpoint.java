@@ -4,8 +4,10 @@ import com.cosmoport.cosmocore.controller.dto.ResultDto;
 import com.cosmoport.cosmocore.controller.dto.TranslationDto;
 import com.cosmoport.cosmocore.controller.helper.TranslationHelper;
 import com.cosmoport.cosmocore.events.ReloadMessage;
+import com.cosmoport.cosmocore.model.GateEntity;
 import com.cosmoport.cosmocore.model.TranslationEntity;
 import com.cosmoport.cosmocore.repository.GateRepository;
+import com.cosmoport.cosmocore.repository.LocaleRepository;
 import com.cosmoport.cosmocore.repository.TranslationRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.context.ApplicationEventPublisher;
@@ -19,15 +21,33 @@ import java.util.List;
 public class GateEndpoint {
 
     private final GateRepository gateRepository;
+    private final LocaleRepository localeRepository;
     private final TranslationRepository translationRepository;
     private final ApplicationEventPublisher eventBus;
 
     public GateEndpoint(GateRepository gateRepository,
+                        LocaleRepository localeRepository,
                         TranslationRepository translationRepository,
                         ApplicationEventPublisher eventBus) {
         this.gateRepository = gateRepository;
+        this.localeRepository = localeRepository;
         this.translationRepository = translationRepository;
         this.eventBus = eventBus;
+    }
+
+    @Transactional
+    @PostMapping
+    @Operation(summary = "Создать новые ворота")
+    public ResultDto create(@RequestBody String name) {
+        final GateEntity tempGate = gateRepository.save(new GateEntity("new_gate"));
+        tempGate.setCode("gate_" + tempGate.getId());
+        final GateEntity newGate = gateRepository.save(tempGate);
+
+        translationRepository.saveAll(
+                TranslationHelper.createTranslationForCodeAndDefaultText(localeRepository, newGate.getCode(), name)
+        );
+
+        return ResultDto.ok();
     }
 
     @GetMapping
