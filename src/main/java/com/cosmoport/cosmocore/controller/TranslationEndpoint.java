@@ -142,10 +142,37 @@ public class TranslationEndpoint {
         return ResultDto.ok();
     }
 
-    public record TranslationCreateRequestDto(int localeId, String code, String text) {
+    @GetMapping("/external")
+    @Operation(summary = "Получить все переводы, не связанные с какими-либо сущностями")
+    public List<TranslationDto> getExternal() {
+        return translationRepository.findAll().stream()
+                .filter(TranslationEntity::isExternal)
+                .map(e -> new TranslationDto(e.getId(), e.getLocaleId(), e.getCode(), e.getText()))
+                .toList();
     }
 
-    public record TextValueUpdateRequestDto(String text) {
+    @PostMapping("/external")
+    @Operation(summary = "Обновить перевод, не связанные с какими-либо сущностями по его id")
+    public ResultDto updateExternal(@RequestBody TranslationUpdateDto request) {
+        translationRepository.findById(request.id).ifPresentOrElse(e -> {
+                    e.setCode(request.code);
+                    e.setText(request.text);
+                    translationRepository.save(e);
+                    eventBus.publishEvent(new ReloadMessage(this));
+                },
+                () -> {
+                    throw new IllegalArgumentException();
+                });
+        return ResultDto.ok();
+    }
+
+    public record TranslationDto(int id, int localeId, String code, String text) {
+    }
+
+    public record TranslationUpdateDto(int id, String code, String text) {
+    }
+
+    public record TranslationCreateRequestDto(int localeId, String code, String text) {
     }
 
 
