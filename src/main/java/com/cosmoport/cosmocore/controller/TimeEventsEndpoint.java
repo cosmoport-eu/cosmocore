@@ -1,5 +1,6 @@
 package com.cosmoport.cosmocore.controller;
 
+import com.cosmoport.cosmocore.controller.dto.ResultDto;
 import com.cosmoport.cosmocore.events.ReloadMessage;
 import com.cosmoport.cosmocore.repository.EventStateRepository;
 import com.cosmoport.cosmocore.repository.EventStatusRepository;
@@ -90,12 +91,36 @@ public class TimeEventsEndpoint {
         )).toList();
     }
 
+    @DeleteMapping("/status/{id}")
+    public ResultDto deleteStatus(@PathVariable("id") final int id) {
+        eventStatusRepository.findById(id).ifPresentOrElse(state -> {
+                    eventStatusRepository.deleteById(id);
+                    eventBus.publishEvent(new ReloadMessage(this));
+                },
+                () -> {
+                    throw new IllegalArgumentException();
+                });
+        return ResultDto.ok();
+    }
+
     @GetMapping("/states")
     public List<EventStateDto> getEventStates() {
         return eventStateRepository.findAll().stream().map(eventStateEntity -> new EventStateDto(
                 eventStateEntity.getId(),
                 eventStateEntity.getCode()
         )).toList();
+    }
+
+    @DeleteMapping("/state/{id}")
+    public ResultDto deleteState(@PathVariable("id") final int id) {
+        eventStateRepository.findById(id).ifPresentOrElse(state -> {
+                    eventStateRepository.deleteById(id);
+                    eventBus.publishEvent(new ReloadMessage(this));
+                },
+                () -> {
+                    throw new IllegalArgumentException();
+                });
+        return ResultDto.ok();
     }
 
     public record EventReferenceDataDto(List<EventTypeDto> types,
