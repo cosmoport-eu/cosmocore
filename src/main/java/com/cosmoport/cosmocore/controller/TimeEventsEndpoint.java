@@ -79,6 +79,7 @@ public class TimeEventsEndpoint {
             e.setDefaultCost(dto.defaultCost());
             e.setDefaultRepeatInterval(dto.defaultRepeatInterval());
             eventTypeRepository.save(e);
+            eventBus.publishEvent(new ReloadMessage(this));
         }, () -> {
             throw new IllegalArgumentException();
         });
