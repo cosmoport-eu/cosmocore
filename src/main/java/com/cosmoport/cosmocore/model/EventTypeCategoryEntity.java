@@ -13,9 +13,6 @@ public class EventTypeCategoryEntity {
     @Id
     @Column(name = "id")
     private int id;
-    @Deprecated
-    @Column(name = "i18n_event_type_category_name")
-    private Integer i18NEventTypeCategoryName;
     @Basic
     @Column(name = "parent")
     private Integer parent;
