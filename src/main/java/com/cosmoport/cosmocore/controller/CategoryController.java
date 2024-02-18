@@ -18,7 +18,7 @@ import java.util.List;
 @RequestMapping("/category")
 public class CategoryController {
     private static final String TEMP_CODE = "NEW_CATEGORY_CODE";
-    private static final String CODE_PREFIX = "category_";
+    private static final String CODE_PREFIX = "event_type_category_";
     private final EventTypeCategoryRepository categoryRepository;
     private final TranslationRepository translationRepository;
     private final LocaleRepository localeRepository;

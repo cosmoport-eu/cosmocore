@@ -19,9 +19,6 @@ public class EventTypeEntity {
     @Deprecated
     @Column(name = "i18n_event_type_name")
     private int i18NEventTypeName;
-    @Deprecated
-    @Column(name = "i18n_event_type_description")
-    private Integer i18NEventTypeDescription;
     @Basic
     @Column(name = "default_duration")
     private int defaultDuration;
