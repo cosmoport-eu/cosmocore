@@ -40,7 +40,7 @@ public class TimeEventsEndpoint {
     }
 
     @Transactional
-    @PostMapping("/types")
+    @PostMapping("/type")
     public ResultDto create(@RequestBody CreateEventTypeDto dto) {
         final EventTypeEntity entity = new EventTypeEntity();
         entity.setCategoryId(dto.categoryId());
@@ -70,6 +70,22 @@ public class TimeEventsEndpoint {
         return ResultDto.ok();
     }
 
+    @Transactional
+    @PutMapping("/type/{id}")
+    public ResultDto updateType(@RequestBody UpdateEventTypeDto dto, @PathVariable int id) {
+        eventTypeRepository.findById(id).ifPresentOrElse(e -> {
+            e.setCategoryId(dto.categoryId());
+            e.setDefaultDuration(dto.defaultDuration());
+            e.setDefaultCost(dto.defaultCost());
+            e.setDefaultRepeatInterval(dto.defaultRepeatInterval());
+            eventTypeRepository.save(e);
+        }, () -> {
+            throw new IllegalArgumentException();
+        });
+
+        return ResultDto.ok();
+    }
+
     @GetMapping("/types")
     public List<EventTypeDto> getEventTypes() {
         return eventTypeRepository.findAll().stream().map(eventTypeEntity -> new EventTypeDto(
@@ -84,7 +100,7 @@ public class TimeEventsEndpoint {
     }
 
 
-    @DeleteMapping("/types/{id}")
+    @DeleteMapping("/type/{id}")
     public String delete(@PathVariable("id") final int id) {
         eventTypeRepository.deleteById(id);
         eventBus.publishEvent(new ReloadMessage(this));
@@ -129,6 +145,13 @@ public class TimeEventsEndpoint {
                     throw new IllegalArgumentException();
                 });
         return ResultDto.ok();
+    }
+
+    public record UpdateEventTypeDto(
+            int categoryId,
+            int defaultDuration,
+            int defaultRepeatInterval,
+            double defaultCost) {
     }
 
     public record CreateEventTypeDto(
