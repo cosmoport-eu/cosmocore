@@ -53,6 +53,10 @@ public class TimeEventsEndpoint {
 
         newEntity.setNameCode(CODE_NAME_PREFIX + newEntity.getId());
         newEntity.setDescCode(CODE_DESC_PREFIX + newEntity.getId());
+        if (eventTypeRepository.existsByDescCode(newEntity.getDescCode()) ||
+                eventTypeRepository.existsByNameCode(newEntity.getNameCode())) {
+            throw new IllegalStateException();
+        }
         eventTypeRepository.save(newEntity);
 
         translationRepository.saveAll(
