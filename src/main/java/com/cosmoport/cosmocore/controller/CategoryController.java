@@ -40,10 +40,11 @@ public class CategoryController {
         entity.setParent(dto.parentId());
         entity.setColor(dto.color());
         final EventTypeCategoryEntity newCategory = categoryRepository.save(entity);
-        newCategory.setCode(CODE_PREFIX + newCategory.getId());
-        if (categoryRepository.existsByCode(newCategory.getCode())) {
-            throw new IllegalStateException("Category with code is already present: " + newCategory.getCode());
+        final String newCode = CODE_PREFIX + newCategory.getId();
+        if (categoryRepository.existsByCode(newCode)) {
+            throw new IllegalStateException("Category with code is already present: " + newCode);
         }
+        newCategory.setCode(newCode);
         categoryRepository.save(newCategory);
 
         translationRepository.saveAll(
