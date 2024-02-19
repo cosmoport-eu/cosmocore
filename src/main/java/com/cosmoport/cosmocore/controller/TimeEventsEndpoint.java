@@ -50,13 +50,13 @@ public class TimeEventsEndpoint {
         entity.setDescCode(TEMP_DESC_CODE);
         entity.setNameCode(TEMP_NAME_CODE);
         final EventTypeEntity newEntity = eventTypeRepository.save(entity);
-
-        newEntity.setNameCode(CODE_NAME_PREFIX + newEntity.getId());
-        newEntity.setDescCode(CODE_DESC_PREFIX + newEntity.getId());
-        if (eventTypeRepository.existsByDescCode(newEntity.getDescCode()) ||
-                eventTypeRepository.existsByNameCode(newEntity.getNameCode())) {
+        if (eventTypeRepository.existsByDescCode(CODE_NAME_PREFIX + newEntity.getId()) ||
+                eventTypeRepository.existsByNameCode(CODE_DESC_PREFIX + newEntity.getId())) {
             throw new IllegalStateException();
         }
+        newEntity.setNameCode(CODE_NAME_PREFIX + newEntity.getId());
+        newEntity.setDescCode(CODE_DESC_PREFIX + newEntity.getId());
+
         eventTypeRepository.save(newEntity);
 
         translationRepository.saveAll(
@@ -64,7 +64,7 @@ public class TimeEventsEndpoint {
         );
 
         translationRepository.saveAll(
-                TranslationHelper.createTranslationForCodeAndDefaultText(localeRepository, newEntity.getDescCode(), dto.desc())
+                TranslationHelper.createTranslationForCodeAndDefaultText(localeRepository, newEntity.getDescCode(), dto.description())
         );
 
         return ResultDto.ok();
@@ -158,7 +158,7 @@ public class TimeEventsEndpoint {
     public record CreateEventTypeDto(
             int categoryId,
             String name,
-            String desc,
+            String description,
             int defaultDuration,
             int defaultRepeatInterval,
             double defaultCost) {
