@@ -16,12 +16,9 @@ public class EventTypeEntity {
     @Basic
     @Column(name = "category_id")
     private Integer categoryId;
-    @Basic
+    @Deprecated
     @Column(name = "i18n_event_type_name")
     private int i18NEventTypeName;
-    @Basic
-    @Column(name = "i18n_event_type_description")
-    private Integer i18NEventTypeDescription;
     @Basic
     @Column(name = "default_duration")
     private int defaultDuration;
@@ -31,4 +28,8 @@ public class EventTypeEntity {
     @Basic
     @Column(name = "default_cost")
     private double defaultCost;
+    @Column(name = "i18n_name_code")
+    private String nameCode;
+    @Column(name = "i18n_desc_code")
+    private String descCode;
 }

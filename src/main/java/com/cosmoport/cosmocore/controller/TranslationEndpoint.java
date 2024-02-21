@@ -3,19 +3,19 @@ package com.cosmoport.cosmocore.controller;
 import com.cosmoport.cosmocore.controller.dto.ResultDto;
 import com.cosmoport.cosmocore.events.ReloadMessage;
 import com.cosmoport.cosmocore.events.TimeoutUpdateMessage;
-import com.cosmoport.cosmocore.model.I18NEntity;
 import com.cosmoport.cosmocore.model.LocaleEntity;
 import com.cosmoport.cosmocore.model.TranslationEntity;
-import com.cosmoport.cosmocore.repository.I18NRepository;
 import com.cosmoport.cosmocore.repository.LocaleRepository;
 import com.cosmoport.cosmocore.repository.TranslationRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.SneakyThrows;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -24,20 +24,18 @@ import java.util.stream.Collectors;
 @RequestMapping("/translations")
 public class TranslationEndpoint {
     private final TranslationRepository translationRepository;
-    private final I18NRepository i18NRepository;
     private final LocaleRepository localeRepository;
     private final ApplicationEventPublisher eventBus;
 
     public TranslationEndpoint(TranslationRepository translationRepository,
-                               I18NRepository i18NRepository,
                                LocaleRepository localeRepository,
                                ApplicationEventPublisher eventBus) {
         this.translationRepository = translationRepository;
-        this.i18NRepository = i18NRepository;
         this.localeRepository = localeRepository;
         this.eventBus = eventBus;
     }
 
+    @Deprecated
     @PostMapping("/locale")
     public LocaleDto createLocale(@RequestBody LocaleDto locale) {
         final LocaleEntity localeEntity = new LocaleEntity();
@@ -51,8 +49,7 @@ public class TranslationEndpoint {
                 .map(translationEntity -> {
                     final TranslationEntity newTranslation = new TranslationEntity();
                     newTranslation.setLocaleId(newLocale.getId());
-                    newTranslation.setI18NId(translationEntity.getI18NId());
-                    newTranslation.setTrText(translationEntity.getTrText());
+                    newTranslation.setText(translationEntity.getText());
                     return newTranslation;
                 })
                 .toList();
@@ -95,9 +92,9 @@ public class TranslationEndpoint {
 
     @PostMapping("/update/{translationId}")
     public ResultDto updateTranslation(@PathVariable("translationId") int translationId,
-                                       @RequestBody TextValueUpdateRequestDto requestDto) {
+                                       @RequestBody String text) {
         return new ResultDto(translationRepository.findById(translationId).map(translationEntity -> {
-            translationEntity.setTrText(requestDto.text());
+            translationEntity.setText(text);
             translationRepository.save(translationEntity);
             eventBus.publishEvent(new ReloadMessage(this));
             return true;
@@ -105,56 +102,77 @@ public class TranslationEndpoint {
     }
 
 
-    @GetMapping("/localeId={localeId}")
-    public List<TranslationDto> getTranslations(@PathVariable("localeId") long localeId) {
-        final Map<Integer, I18NEntity> i18NMap = i18NRepository.findAll().stream()
-                .collect(Collectors.toMap(I18NEntity::getId, Function.identity()));
-        return translationRepository.findAllByLocaleId(localeId).stream().map(translationEntity -> {
-            final I18NEntity entity = i18NMap.get(translationEntity.getI18NId());
-            return new TranslationDto(translationEntity.getId(), translationEntity.getI18NId(), translationEntity.getLocaleId(), translationEntity.getTrText(),
-                    new I18nDto(entity.getId(), entity.getTag(), entity.isExternal(), entity.getDescription(), entity.getParams()));
-        }).toList();
+    @GetMapping("/{locale}")
+    @Operation(summary = "Get translations map (code to text) for locale (ru, en, etc)")
+    public Map<String, String> getTranslationsMap(@PathVariable("locale") String locale) {
+        final LocaleEntity localeEntity = localeRepository.findByCode(locale).orElseThrow();
+        return translationRepository.findAllByLocaleId(localeEntity.getId()).stream()
+                .collect(Collectors.toMap(TranslationEntity::getCode, TranslationEntity::getText));
     }
 
     @GetMapping
-    public Map<String, Map<String, TranslationLightDto>> get() {
-        final Map<Integer, I18NEntity> i18nsByIdMap = i18NRepository.findAll().stream()
-                .collect(Collectors.toMap(I18NEntity::getId, Function.identity()));
-
+    @Operation(summary = "Получить все переводы для всех языков в формате {locale: {code: text}}")
+    public Map<String, Map<String, String>> get() {
         final Map<Integer, LocaleEntity> localesByIdMap = localeRepository.findAll().stream()
                 .collect(Collectors.toMap(LocaleEntity::getId, Function.identity()));
 
-        final Map<String, Map<String, TranslationLightDto>> map = new LinkedHashMap<>();
+        final Map<String, Map<String, String>> map = new LinkedHashMap<>();
         for (final TranslationEntity translation : translationRepository.findAll()) {
-            final I18NEntity i18NEntity = i18nsByIdMap.get(translation.getI18NId());
-            final TranslationLightDto lightDto = new TranslationLightDto(translation.getId(), getValues(translation, i18NEntity));
             final String locale = localesByIdMap.get(translation.getLocaleId()).getCode();
-            final String translationKey = i18NEntity.isExternal() ? i18NEntity.getTag() : String.valueOf(i18NEntity.getId());
-            map.computeIfAbsent(locale, k -> new HashMap<>()).put(translationKey, lightDto);
+            map.computeIfAbsent(locale, k -> new HashMap<>()).put(translation.getCode(), translation.getText());
         }
         return map;
     }
 
+    @PostMapping
+    @Operation(summary = "Создать перевод. Для каждого языка создается дубликат с таким же текстом")
+    public ResultDto create(@RequestBody TranslationCreateRequestDto request) {
+        final List<TranslationEntity> newTranslations = localeRepository.findAll().stream()
+                .map(localeEntity -> {
+                    final TranslationEntity translation = new TranslationEntity();
+                    translation.setLocaleId(localeEntity.getId());
+                    translation.setCode(request.code());
+                    translation.setText(request.text());
+                    return translation;
+                }).toList();
 
-    @SneakyThrows
-    private List<String> getValues(final TranslationEntity translation, I18NEntity i18NEntity) {
-        if ("json_array".equals(i18NEntity.getParams())) {
-            return Arrays.asList(new ObjectMapper().readValue(translation.getTrText(), String[].class));
-        } else {
-            return Collections.singletonList(translation.getTrText());
-        }
+
+        translationRepository.saveAll(newTranslations);
+        eventBus.publishEvent(new ReloadMessage(this));
+        return ResultDto.ok();
     }
 
-    public record TranslationLightDto(long id, List<String> values) {
+    @GetMapping("/external")
+    @Operation(summary = "Получить все переводы, не связанные с какими-либо сущностями")
+    public List<TranslationDto> getExternal() {
+        return translationRepository.findAll().stream()
+                .filter(TranslationEntity::isExternal)
+                .map(e -> new TranslationDto(e.getId(), e.getLocaleId(), e.getCode(), e.getText()))
+                .toList();
     }
 
-    public record TranslationDto(long id, long i18nId, long localeId, String text, I18nDto i18n) {
+    @PostMapping("/external")
+    @Operation(summary = "Обновить перевод, не связанные с какими-либо сущностями по его id")
+    public ResultDto updateExternal(@RequestBody TranslationUpdateDto request) {
+        translationRepository.findById(request.id).ifPresentOrElse(e -> {
+                    e.setCode(request.code);
+                    e.setText(request.text);
+                    translationRepository.save(e);
+                    eventBus.publishEvent(new ReloadMessage(this));
+                },
+                () -> {
+                    throw new IllegalArgumentException();
+                });
+        return ResultDto.ok();
     }
 
-    public record I18nDto(long id, String tag, boolean external, String description, String params) {
+    public record TranslationDto(int id, int localeId, String code, String text) {
     }
 
-    public record TextValueUpdateRequestDto(String text) {
+    public record TranslationUpdateDto(int id, String code, String text) {
+    }
+
+    public record TranslationCreateRequestDto(int localeId, String code, String text) {
     }
 
 

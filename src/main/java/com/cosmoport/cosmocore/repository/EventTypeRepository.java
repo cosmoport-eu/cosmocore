@@ -18,4 +18,7 @@ public interface EventTypeRepository extends JpaRepository<EventTypeEntity, Inte
             LIMIT 1
             """, nativeQuery = true)
     Optional<EventTypeEntity> findAnyDuplicate(int categoryId, String name);
+
+    boolean existsByNameCode(String nameCode);
+    boolean existsByDescCode(String descCode);
 }

@@ -14,12 +14,11 @@ public class TranslationEntity {
     @Column(name = "id")
     private int id;
     @Basic
-    @Column(name = "i18n_id")
-    private int i18NId;
-    @Basic
     @Column(name = "locale_id")
     private int localeId;
+    private String code;
     @Basic
     @Column(name = "tr_text")
-    private String trText;
+    private String text;
+    private boolean isExternal;
 }

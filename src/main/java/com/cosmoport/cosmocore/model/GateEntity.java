@@ -13,10 +13,13 @@ public class GateEntity {
     @Id
     @Column(name = "id")
     private int id;
-    @Basic
-    @Column(name = "number")
-    private int number;
-    @Basic
-    @Column(name = "gate_name")
-    private String gateName;
+    @Column(name = "i18n_code")
+    private String code;
+
+    public GateEntity() {
+    }
+
+    public GateEntity(String code) {
+        this.code = code;
+    }
 }

@@ -14,13 +14,11 @@ public class EventTypeCategoryEntity {
     @Column(name = "id")
     private int id;
     @Basic
-    @Column(name = "i18n_event_type_category_name")
-    private Integer i18NEventTypeCategoryName;
-    @Basic
     @Column(name = "parent")
     private Integer parent;
     @Basic
     @Column(name = "COLOR")
     private String color;
-
+    @Column(name = "i18n_code")
+    private String code;
 }

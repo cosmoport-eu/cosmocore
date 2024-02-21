@@ -13,7 +13,9 @@ public class EventStatusEntity {
     @Id
     @Column(name = "id")
     private int id;
-    @Basic
+    @Deprecated
     @Column(name = "i18n_status")
     private Integer i18NStatus;
+    @Column(name = "i18n_code")
+    private String code;
 }

@@ -4,18 +4,16 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-@Entity
-@Getter
 @Setter
-@Table(name = "EVENT_STATE")
-public class EventStateEntity {
+@Getter
+@Entity
+@Table(name = "MATERIAL")
+public class MaterialEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
     @Column(name = "id")
     private int id;
-    @Deprecated
-    @Column(name = "i18n_state")
-    private Integer i18NState;
+
     @Column(name = "i18n_code")
     private String code;
 }
