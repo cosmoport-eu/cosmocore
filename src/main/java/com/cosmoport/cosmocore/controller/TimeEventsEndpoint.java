@@ -47,6 +47,7 @@ public class TimeEventsEndpoint {
         entity.setDefaultDuration(dto.defaultDuration());
         entity.setDefaultRepeatInterval(dto.defaultRepeatInterval());
         entity.setDefaultCost(dto.defaultCost());
+        entity.setParentId(dto.parentId());
         entity.setDescCode(TEMP_DESC_CODE);
         entity.setNameCode(TEMP_NAME_CODE);
         final EventTypeEntity newEntity = eventTypeRepository.save(entity);
@@ -78,6 +79,7 @@ public class TimeEventsEndpoint {
             e.setDefaultDuration(dto.defaultDuration());
             e.setDefaultCost(dto.defaultCost());
             e.setDefaultRepeatInterval(dto.defaultRepeatInterval());
+            e.setParentId(dto.parentId());
             eventTypeRepository.save(e);
             eventBus.publishEvent(new ReloadMessage(this));
         }, () -> {
@@ -96,7 +98,8 @@ public class TimeEventsEndpoint {
                 eventTypeEntity.getDescCode(),
                 eventTypeEntity.getDefaultDuration(),
                 eventTypeEntity.getDefaultRepeatInterval(),
-                eventTypeEntity.getDefaultCost()
+                eventTypeEntity.getDefaultCost(),
+                eventTypeEntity.getParentId()
         )).toList();
     }
 
@@ -152,7 +155,8 @@ public class TimeEventsEndpoint {
             int categoryId,
             int defaultDuration,
             int defaultRepeatInterval,
-            double defaultCost) {
+            double defaultCost,
+            Integer parentId) {
     }
 
     public record CreateEventTypeDto(
@@ -161,7 +165,8 @@ public class TimeEventsEndpoint {
             String description,
             int defaultDuration,
             int defaultRepeatInterval,
-            double defaultCost) {
+            double defaultCost,
+            Integer parentId) {
     }
 
     public record EventTypeDto(int id,
@@ -170,7 +175,8 @@ public class TimeEventsEndpoint {
                                String descCode,
                                int defaultDuration,
                                int defaultRepeatInterval,
-                               double defaultCost) {
+                               double defaultCost,
+                               Integer parentId) {
     }
 
 
