@@ -80,7 +80,7 @@ public class GateEndpoint {
                 .toList();
     }
 
-    @PutMapping("/{translationId}")
+    @PostMapping("/{translationId}")
     @Operation(summary = "Обновить название ворот по id перевода")
     public ResultDto updateText(@PathVariable int translationId, @RequestBody String text) {
         translationRepository.findById(translationId)
@@ -98,7 +98,7 @@ public class GateEndpoint {
     }
 
     @Transactional
-    @PutMapping("/code/{gateId}")
+    @PostMapping("/code/{gateId}")
     @Operation(summary = "Обновить кодовое обозначение ворот")
     public ResultDto updateCode(@PathVariable int gateId, @RequestBody String text) {
         gateRepository.findById(gateId)

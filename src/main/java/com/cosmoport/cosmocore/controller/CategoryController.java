@@ -89,7 +89,7 @@ public class CategoryController {
     }
 
     @Transactional
-    @PutMapping("/{id}")
+    @PostMapping("/{id}")
     @Operation(summary = "Update i18n code")
     public ResultDto update(@PathVariable("id") int id, @RequestBody String code) {
         categoryRepository.findById(id).ifPresentOrElse(materialEntity -> {

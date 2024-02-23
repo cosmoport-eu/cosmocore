@@ -78,7 +78,7 @@ public class FacilityController {
     }
 
     @Transactional
-    @PutMapping("/{id}")
+    @PostMapping("/{id}")
     @Operation(summary = "Update facility i18n code")
     public ResultDto update(@PathVariable("id") int id, @RequestBody String facilityCode) {
         facilityRepository.findById(id).ifPresentOrElse(facilityEntity -> {

@@ -30,7 +30,7 @@ public class EventStateController {
     }
 
 
-    @PutMapping("/updateText")
+    @PostMapping("/updateText")
     public ResultDto updateText(@RequestBody TextUpdateDto textUpdateDto) {
         eventStateRepository.findById(textUpdateDto.id())
                 .ifPresentOrElse(eventStateEntity -> {
@@ -46,7 +46,7 @@ public class EventStateController {
     }
 
     @Transactional
-    @PutMapping("/updateCode/{id}")
+    @PostMapping("/updateCode/{id}")
     public ResultDto updateCode(@PathVariable int id, @RequestBody String newCode) {
         eventStateRepository.findById(id)
                 .ifPresentOrElse(eventStateEntity -> {
