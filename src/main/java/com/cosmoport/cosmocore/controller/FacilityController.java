@@ -50,18 +50,17 @@ public class FacilityController {
     @Transactional
     @DeleteMapping("/{id}")
     public ResultDto delete(@PathVariable("id") int id) {
-        facilityRepository.findById(id).ifPresentOrElse(facilityEntity -> {
-            translationRepository.deleteAllByCode(facilityEntity.getCode());
-            facilityRepository.deleteById(id);
-        }, () -> {
+        facilityRepository.findById(id).ifPresentOrElse(facilityEntity -> facilityEntity.setDisabled(true), () -> {
             throw new IllegalArgumentException("Facility not found");
         });
         return ResultDto.ok();
     }
 
     @GetMapping
-    public List<FacilityDto> getAll(@RequestParam("localeId") int localeId) {
+    public List<FacilityDto> getAll(@RequestParam("localeId") int localeId,
+                                    @RequestParam(value = "isActive", required = false) Boolean isActive) {
         return facilityRepository.findAll().stream()
+                .filter(entity -> isActive == null || entity.isDisabled() != isActive)
                 .map(facilityEntity -> {
                     final TranslationEntity translation =
                             translationRepository.findByLocaleIdAndCode(localeId, facilityEntity.getCode()).orElseThrow();
@@ -70,8 +69,11 @@ public class FacilityController {
     }
 
     @GetMapping("/all")
-    public List<FacilityDtoWithTranslations> getAllWithTranslations() {
+    public List<FacilityDtoWithTranslations> getAllWithTranslations(
+            @RequestParam(value = "isActive", required = false) Boolean isActive
+    ) {
         return facilityRepository.findAll().stream()
+                .filter(entity -> isActive == null || entity.isDisabled() != isActive)
                 .map(entity ->
                         new FacilityDtoWithTranslations(entity.getId(), entity.getCode(),
                                 TranslationHelper.getTranslationsByCode(translationRepository, entity.getCode()))).toList();

@@ -15,6 +15,8 @@ public class GateEntity {
     private int id;
     @Column(name = "i18n_code")
     private String code;
+    @Column(name = "is_disabled")
+    private boolean isDisabled;
 
     public GateEntity() {
     }
