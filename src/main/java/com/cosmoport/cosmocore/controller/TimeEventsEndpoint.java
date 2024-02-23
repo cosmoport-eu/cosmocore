@@ -56,7 +56,7 @@ public class TimeEventsEndpoint {
     }
 
     @Transactional
-    @PutMapping("/type/{id}")
+    @PostMapping("/type/{id}")
     public ResultDto updateType(@RequestBody UpdateEventTypeDto dto, @PathVariable int id) {
         eventTypeRepository.findById(id).ifPresentOrElse(e -> {
             e.setCategoryId(dto.categoryId());
@@ -70,6 +70,36 @@ public class TimeEventsEndpoint {
             throw new IllegalArgumentException();
         });
 
+        return ResultDto.ok();
+    }
+
+    @Transactional
+    @PostMapping("/type/text/{id}")
+    public ResultDto updateText(@RequestBody UpdateTextRequest request, @PathVariable int id) {
+        eventTypeRepository.findById(id).ifPresentOrElse(entity -> {
+            if (request.name() != null) {
+                translationRepository.findByLocaleIdAndCode(request.localeId(), entity.getNameCode())
+                        .ifPresentOrElse(translationEntity -> {
+                            translationEntity.setText(request.name());
+                            translationRepository.save(translationEntity);
+                        }, () -> {
+                            throw new IllegalArgumentException("Translation not found: " +
+                                    request.localeId() + ", " + entity.getNameCode());
+                        });
+            }
+            if (request.description() != null) {
+                translationRepository.findByLocaleIdAndCode(request.localeId(), entity.getDescCode())
+                        .ifPresentOrElse(translationEntity -> {
+                            translationEntity.setText(request.description());
+                            translationRepository.save(translationEntity);
+                        }, () -> {
+                            throw new IllegalArgumentException("Translation not found: " +
+                                    request.localeId() + ", " + entity.getDescCode());
+                        });
+            }
+        }, () -> {
+            throw new IllegalArgumentException("Event type not found");
+        });
         return ResultDto.ok();
     }
 
@@ -135,11 +165,16 @@ public class TimeEventsEndpoint {
         return ResultDto.ok();
     }
 
+    public record UpdateTextRequest(int localeId, String name, String description) {
+    }
+
     public record UpdateEventTypeDto(
             int categoryId,
             int defaultDuration,
             int defaultRepeatInterval,
             double defaultCost,
+            String name,
+            String description,
             Integer parentId) {
     }
 
