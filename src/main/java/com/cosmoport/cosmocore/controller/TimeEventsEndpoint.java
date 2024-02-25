@@ -185,6 +185,7 @@ public class TimeEventsEndpoint {
             int defaultDuration,
             int defaultRepeatInterval,
             double defaultCost,
+            Integer parentId,
             List<SubType> subTypes) {
     }
 
@@ -230,6 +231,7 @@ public class TimeEventsEndpoint {
 
     private EventTypeEntity typeFromDto(CreateEventTypeDto dto) {
         final EventTypeEntity entity = new EventTypeEntity();
+        entity.setParentId(dto.parentId());
         entity.setCategoryId(dto.categoryId());
         entity.setDefaultDuration(dto.defaultDuration());
         entity.setDefaultRepeatInterval(dto.defaultRepeatInterval());
