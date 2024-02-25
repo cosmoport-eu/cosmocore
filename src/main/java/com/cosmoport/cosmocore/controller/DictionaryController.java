@@ -75,7 +75,6 @@ public class DictionaryController {
         return eventTypeCategoryRepository.findAll().stream().map(eventTypeCategoryEntity -> new EventTypeCategoryDto(
                 eventTypeCategoryEntity.getId(),
                 eventTypeCategoryEntity.getCode(),
-                eventTypeCategoryEntity.getParent() == null ? 0 : eventTypeCategoryEntity.getParent(),
                 eventTypeCategoryEntity.getColor(),
                 TranslationHelper.getTranslationsByCode(translationRepository, eventTypeCategoryEntity.getCode())
         )).toList();
@@ -95,7 +94,6 @@ public class DictionaryController {
 
     public record EventTypeCategoryDto(long id,
                                        String code,
-                                       long parent,
                                        String color,
                                        List<TranslationDto> translations) {
     }

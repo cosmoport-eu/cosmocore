@@ -79,7 +79,7 @@ public class MaterialController {
     }
 
     @Transactional
-    @PutMapping("/{id}")
+    @PostMapping("/{id}")
     @Operation(summary = "Update i18n code")
     public ResultDto update(@PathVariable("id") int id, @RequestBody String materialCode) {
         materialRepository.findById(id).ifPresentOrElse(materialEntity -> {

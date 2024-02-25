@@ -14,9 +14,6 @@ public class EventTypeCategoryEntity {
     @Column(name = "id")
     private int id;
     @Basic
-    @Column(name = "parent")
-    private Integer parent;
-    @Basic
     @Column(name = "COLOR")
     private String color;
     @Column(name = "i18n_code")

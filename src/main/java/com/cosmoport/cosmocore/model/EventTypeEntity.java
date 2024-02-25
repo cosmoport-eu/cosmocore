@@ -29,4 +29,6 @@ public class EventTypeEntity {
     private String nameCode;
     @Column(name = "i18n_desc_code")
     private String descCode;
+    @Column(name = "parent_id")
+    private Integer parentId;
 }

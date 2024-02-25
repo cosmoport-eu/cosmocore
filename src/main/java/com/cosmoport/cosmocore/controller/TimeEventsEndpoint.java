@@ -10,12 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/t_events")
 public class TimeEventsEndpoint {
-    private static final String TEMP_NAME_CODE = "NEW_TYPE_NAME_CODE";
-    private static final String TEMP_DESC_CODE = "NEW_TYPE_DESC_CODE";
     private static final String CODE_NAME_PREFIX = "event_type_name_";
     private static final String CODE_DESC_PREFIX = "event_type_desc_";
     private final EventTypeRepository eventTypeRepository;
@@ -42,48 +41,65 @@ public class TimeEventsEndpoint {
     @Transactional
     @PostMapping("/type")
     public ResultDto create(@RequestBody CreateEventTypeDto dto) {
-        final EventTypeEntity entity = new EventTypeEntity();
-        entity.setCategoryId(dto.categoryId());
-        entity.setDefaultDuration(dto.defaultDuration());
-        entity.setDefaultRepeatInterval(dto.defaultRepeatInterval());
-        entity.setDefaultCost(dto.defaultCost());
-        entity.setDescCode(TEMP_DESC_CODE);
-        entity.setNameCode(TEMP_NAME_CODE);
-        final EventTypeEntity newEntity = eventTypeRepository.save(entity);
-        if (eventTypeRepository.existsByDescCode(CODE_NAME_PREFIX + newEntity.getId()) ||
-                eventTypeRepository.existsByNameCode(CODE_DESC_PREFIX + newEntity.getId())) {
-            throw new IllegalStateException();
+        final EventTypeEntity newEntity = eventTypeRepository.save(typeFromDto(dto));
+        createTranslationsForType(newEntity, dto.name(), dto.description());
+
+        if (dto.subTypes() != null) {
+            dto.subTypes().forEach(subType -> {
+                final EventTypeEntity subEntity = eventTypeRepository.save(typeFromDto(dto));
+                subEntity.setParentId(newEntity.getId());
+                createTranslationsForType(subEntity, subType.name(), subType.description());
+            });
         }
-        newEntity.setNameCode(CODE_NAME_PREFIX + newEntity.getId());
-        newEntity.setDescCode(CODE_DESC_PREFIX + newEntity.getId());
-
-        eventTypeRepository.save(newEntity);
-
-        translationRepository.saveAll(
-                TranslationHelper.createTranslationForCodeAndDefaultText(localeRepository, newEntity.getNameCode(), dto.name())
-        );
-
-        translationRepository.saveAll(
-                TranslationHelper.createTranslationForCodeAndDefaultText(localeRepository, newEntity.getDescCode(), dto.description())
-        );
 
         return ResultDto.ok();
     }
 
     @Transactional
-    @PutMapping("/type/{id}")
+    @PostMapping("/type/{id}")
     public ResultDto updateType(@RequestBody UpdateEventTypeDto dto, @PathVariable int id) {
         eventTypeRepository.findById(id).ifPresentOrElse(e -> {
             e.setCategoryId(dto.categoryId());
             e.setDefaultDuration(dto.defaultDuration());
             e.setDefaultCost(dto.defaultCost());
             e.setDefaultRepeatInterval(dto.defaultRepeatInterval());
+            e.setParentId(dto.parentId());
             eventTypeRepository.save(e);
             eventBus.publishEvent(new ReloadMessage(this));
         }, () -> {
             throw new IllegalArgumentException();
         });
 
+        return ResultDto.ok();
+    }
+
+    @Transactional
+    @PostMapping("/type/text/{id}")
+    public ResultDto updateText(@RequestBody UpdateTextRequest request, @PathVariable int id) {
+        eventTypeRepository.findById(id).ifPresentOrElse(entity -> {
+            if (request.name() != null) {
+                translationRepository.findByLocaleIdAndCode(request.localeId(), entity.getNameCode())
+                        .ifPresentOrElse(translationEntity -> {
+                            translationEntity.setText(request.name());
+                            translationRepository.save(translationEntity);
+                        }, () -> {
+                            throw new IllegalArgumentException("Translation not found: " +
+                                    request.localeId() + ", " + entity.getNameCode());
+                        });
+            }
+            if (request.description() != null) {
+                translationRepository.findByLocaleIdAndCode(request.localeId(), entity.getDescCode())
+                        .ifPresentOrElse(translationEntity -> {
+                            translationEntity.setText(request.description());
+                            translationRepository.save(translationEntity);
+                        }, () -> {
+                            throw new IllegalArgumentException("Translation not found: " +
+                                    request.localeId() + ", " + entity.getDescCode());
+                        });
+            }
+        }, () -> {
+            throw new IllegalArgumentException("Event type not found");
+        });
         return ResultDto.ok();
     }
 
@@ -96,7 +112,8 @@ public class TimeEventsEndpoint {
                 eventTypeEntity.getDescCode(),
                 eventTypeEntity.getDefaultDuration(),
                 eventTypeEntity.getDefaultRepeatInterval(),
-                eventTypeEntity.getDefaultCost()
+                eventTypeEntity.getDefaultCost(),
+                eventTypeEntity.getParentId()
         )).toList();
     }
 
@@ -148,11 +165,17 @@ public class TimeEventsEndpoint {
         return ResultDto.ok();
     }
 
+    public record UpdateTextRequest(int localeId, String name, String description) {
+    }
+
     public record UpdateEventTypeDto(
             int categoryId,
             int defaultDuration,
             int defaultRepeatInterval,
-            double defaultCost) {
+            double defaultCost,
+            String name,
+            String description,
+            Integer parentId) {
     }
 
     public record CreateEventTypeDto(
@@ -161,7 +184,12 @@ public class TimeEventsEndpoint {
             String description,
             int defaultDuration,
             int defaultRepeatInterval,
-            double defaultCost) {
+            double defaultCost,
+            Integer parentId,
+            List<SubType> subTypes) {
+    }
+
+    public record SubType(String name, String description) {
     }
 
     public record EventTypeDto(int id,
@@ -170,17 +198,46 @@ public class TimeEventsEndpoint {
                                String descCode,
                                int defaultDuration,
                                int defaultRepeatInterval,
-                               double defaultCost) {
+                               double defaultCost,
+                               Integer parentId) {
     }
 
 
-    public record EventStatusDto(long id,
-                                 String code) {
+    public record EventStatusDto(long id, String code) {
     }
 
 
-    public record EventStateDto(long id,
-                                String code) {
+    public record EventStateDto(long id, String code) {
     }
 
+    private void createTranslationsForType(final EventTypeEntity newEntity, String name, String desc) {
+        if (eventTypeRepository.existsByDescCode(CODE_NAME_PREFIX + newEntity.getId()) ||
+                eventTypeRepository.existsByNameCode(CODE_DESC_PREFIX + newEntity.getId())) {
+            throw new IllegalStateException();
+        }
+        newEntity.setNameCode(CODE_NAME_PREFIX + newEntity.getId());
+        newEntity.setDescCode(CODE_DESC_PREFIX + newEntity.getId());
+
+        eventTypeRepository.save(newEntity);
+
+        translationRepository.saveAll(
+                TranslationHelper.createTranslationForCodeAndDefaultText(localeRepository, newEntity.getNameCode(), name)
+        );
+
+        translationRepository.saveAll(
+                TranslationHelper.createTranslationForCodeAndDefaultText(localeRepository, newEntity.getDescCode(), desc)
+        );
+    }
+
+    private EventTypeEntity typeFromDto(CreateEventTypeDto dto) {
+        final EventTypeEntity entity = new EventTypeEntity();
+        entity.setParentId(dto.parentId());
+        entity.setCategoryId(dto.categoryId());
+        entity.setDefaultDuration(dto.defaultDuration());
+        entity.setDefaultRepeatInterval(dto.defaultRepeatInterval());
+        entity.setDefaultCost(dto.defaultCost());
+        entity.setDescCode(UUID.randomUUID().toString());
+        entity.setNameCode(UUID.randomUUID().toString());
+        return entity;
+    }
 }

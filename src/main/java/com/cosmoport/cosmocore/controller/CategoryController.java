@@ -37,7 +37,6 @@ public class CategoryController {
     public ResultDto create(@RequestBody CreateCategoryDto dto) {
         final EventTypeCategoryEntity entity = new EventTypeCategoryEntity();
         entity.setCode(TEMP_CODE);
-        entity.setParent(dto.parentId());
         entity.setColor(dto.color());
         final EventTypeCategoryEntity newCategory = categoryRepository.save(entity);
         final String newCode = CODE_PREFIX + newCategory.getId();
@@ -76,8 +75,7 @@ public class CategoryController {
                             entity.getId(),
                             entity.getCode(),
                             translation.getText(),
-                            entity.getColor(),
-                            entity.getParent()
+                            entity.getColor()
                     );
                 }).toList();
     }
@@ -86,12 +84,12 @@ public class CategoryController {
     public List<CategoryTranslationsDto> getAllWithTranslations() {
         return categoryRepository.findAll().stream()
                 .map(entity ->
-                        new CategoryTranslationsDto(entity.getId(), entity.getCode(), entity.getColor(), entity.getParent(),
+                        new CategoryTranslationsDto(entity.getId(), entity.getCode(), entity.getColor(),
                                 TranslationHelper.getTranslationsByCode(translationRepository, entity.getCode()))).toList();
     }
 
     @Transactional
-    @PutMapping("/{id}")
+    @PostMapping("/{id}")
     @Operation(summary = "Update i18n code")
     public ResultDto update(@PathVariable("id") int id, @RequestBody String code) {
         categoryRepository.findById(id).ifPresentOrElse(materialEntity -> {
@@ -107,13 +105,13 @@ public class CategoryController {
         return ResultDto.ok();
     }
 
-    public record CreateCategoryDto(String name, String color, Integer parentId) {
+    public record CreateCategoryDto(String name, String color) {
     }
 
-    public record CategoryDto(int id, String code, String name, String color, Integer parent) {
+    public record CategoryDto(int id, String code, String name, String color) {
     }
 
-    public record CategoryTranslationsDto(int id, String code, String color, Integer parent,
+    public record CategoryTranslationsDto(int id, String code, String color,
                                           List<TranslationDto> translations) {
     }
 }
