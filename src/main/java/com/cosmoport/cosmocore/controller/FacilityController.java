@@ -61,10 +61,10 @@ public class FacilityController {
                                     @RequestParam(value = "isActive", required = false) Boolean isActive) {
         return facilityRepository.findAll().stream()
                 .filter(entity -> isActive == null || entity.isDisabled() != isActive)
-                .map(facilityEntity -> {
+                .map(entity -> {
                     final TranslationEntity translation =
-                            translationRepository.findByLocaleIdAndCode(localeId, facilityEntity.getCode()).orElseThrow();
-                    return new FacilityDto(facilityEntity.getId(), facilityEntity.getCode(), translation.getText());
+                            translationRepository.findByLocaleIdAndCode(localeId, entity.getCode()).orElseThrow();
+                    return new FacilityDto(entity.getId(), entity.getCode(), translation.getText(), entity.isDisabled());
                 }).toList();
     }
 
@@ -75,7 +75,7 @@ public class FacilityController {
         return facilityRepository.findAll().stream()
                 .filter(entity -> isActive == null || entity.isDisabled() != isActive)
                 .map(entity ->
-                        new FacilityDtoWithTranslations(entity.getId(), entity.getCode(),
+                        new FacilityDtoWithTranslations(entity.getId(), entity.getCode(), entity.isDisabled(),
                                 TranslationHelper.getTranslationsByCode(translationRepository, entity.getCode()))).toList();
     }
 
@@ -96,9 +96,9 @@ public class FacilityController {
         return ResultDto.ok();
     }
 
-    public record FacilityDto(int id, String code, String name) {
+    public record FacilityDto(int id, String code, String name, boolean isDisabled) {
     }
 
-    public record FacilityDtoWithTranslations(int id, String code, List<TranslationDto> translations) {
+    public record FacilityDtoWithTranslations(int id, String code, boolean isDisabled, List<TranslationDto> translations) {
     }
 }

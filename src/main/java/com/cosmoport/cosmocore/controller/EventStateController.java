@@ -40,7 +40,7 @@ public class EventStateController {
                     translationRepository.save(translation);
                     eventBus.publishEvent(new ReloadMessage(this));
                 }, () -> {
-                    throw new RuntimeException("Event state not found");
+                    throw new IllegalArgumentException("Event state not found");
                 });
         return ResultDto.ok();
     }

@@ -74,7 +74,8 @@ public class CategoryController {
                             entity.getId(),
                             entity.getCode(),
                             translation.getText(),
-                            entity.getColor()
+                            entity.getColor(),
+                            entity.isDisabled()
                     );
                 }).toList();
     }
@@ -85,7 +86,7 @@ public class CategoryController {
         return categoryRepository.findAll().stream()
                 .filter(entity -> isActive == null || entity.isDisabled() != isActive)
                 .map(entity ->
-                        new CategoryTranslationsDto(entity.getId(), entity.getCode(), entity.getColor(),
+                        new CategoryTranslationsDto(entity.getId(), entity.getCode(), entity.getColor(), entity.isDisabled(),
                                 TranslationHelper.getTranslationsByCode(translationRepository, entity.getCode()))).toList();
     }
 
@@ -109,10 +110,10 @@ public class CategoryController {
     public record CreateCategoryDto(String name, String color) {
     }
 
-    public record CategoryDto(int id, String code, String name, String color) {
+    public record CategoryDto(int id, String code, String name, String color, boolean isDisabled) {
     }
 
-    public record CategoryTranslationsDto(int id, String code, String color,
+    public record CategoryTranslationsDto(int id, String code, String color, boolean isDisabled,
                                           List<TranslationDto> translations) {
     }
 }

@@ -41,6 +41,7 @@ public class DictionaryController {
                 .map(eventStateEntity -> new EventStateDto(
                         eventStateEntity.getId(),
                         eventStateEntity.getCode(),
+                        eventStateEntity.isDisabled(),
                         TranslationHelper.getTranslationsByCode(translationRepository, eventStateEntity.getCode())
                 )).toList();
     }
@@ -53,6 +54,7 @@ public class DictionaryController {
                 .map(eventStatusEntity -> new EventStatusDto(
                         eventStatusEntity.getId(),
                         eventStatusEntity.getCode(),
+                        eventStatusEntity.isDisabled(),
                         TranslationHelper.getTranslationsByCode(translationRepository, eventStatusEntity.getCode())
                 )).toList();
     }
@@ -71,7 +73,8 @@ public class DictionaryController {
                         TranslationHelper.getTranslationsByCode(translationRepository, eventTypeEntity.getDescCode()),
                         eventTypeEntity.getDefaultDuration(),
                         eventTypeEntity.getDefaultRepeatInterval(),
-                        eventTypeEntity.getDefaultCost()
+                        eventTypeEntity.getDefaultCost(),
+                        eventTypeEntity.isDisabled()
                 )).toList();
     }
 
@@ -85,6 +88,7 @@ public class DictionaryController {
                         eventTypeCategoryEntity.getId(),
                         eventTypeCategoryEntity.getCode(),
                         eventTypeCategoryEntity.getColor(),
+                        eventTypeCategoryEntity.isDisabled(),
                         TranslationHelper.getTranslationsByCode(translationRepository, eventTypeCategoryEntity.getCode())
                 )).toList();
     }
@@ -97,25 +101,29 @@ public class DictionaryController {
                                List<TranslationDto> descTranslations,
                                int defaultDuration,
                                int defaultRepeatInterval,
-                               double defaultCost) {
+                               double defaultCost,
+                               boolean isDisabled) {
     }
 
 
     public record EventTypeCategoryDto(long id,
                                        String code,
                                        String color,
+                                       boolean isDisabled,
                                        List<TranslationDto> translations) {
     }
 
 
     public record EventStatusDto(long id,
                                  String code,
+                                 boolean isDisabled,
                                  List<TranslationDto> translations) {
     }
 
 
     public record EventStateDto(long id,
                                 String code,
+                                boolean isDisabled,
                                 List<TranslationDto> translations) {
     }
 

@@ -60,6 +60,7 @@ public class GateEndpoint {
                 .map(gateEntity -> new GateDto(
                                 gateEntity.getId(),
                                 gateEntity.getCode(),
+                                gateEntity.isDisabled(),
                                 TranslationHelper.getTranslationsByCode(translationRepository, gateEntity.getCode())
                         )
                 )
@@ -79,7 +80,8 @@ public class GateEndpoint {
                             gateEntity.getId(),
                             translation.getId(),
                             gateEntity.getCode(),
-                            translation.getText()
+                            translation.getText(),
+                            gateEntity.isDisabled()
                     );
                 })
                 .toList();
@@ -137,9 +139,9 @@ public class GateEndpoint {
         return ResultDto.ok();
     }
 
-    public record GateDto(long id, String code, List<TranslationDto> translations) {
+    public record GateDto(long id, String code, boolean isDisabled, List<TranslationDto> translations) {
     }
 
-    public record GateDtoWithText(long id, int translationId, String code, String text) {
+    public record GateDtoWithText(long id, int translationId, String code, String text, boolean isDisabled) {
     }
 }

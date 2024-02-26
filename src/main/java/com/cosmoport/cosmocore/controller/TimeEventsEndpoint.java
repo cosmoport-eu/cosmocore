@@ -115,6 +115,7 @@ public class TimeEventsEndpoint {
                         eventTypeEntity.getDefaultDuration(),
                         eventTypeEntity.getDefaultRepeatInterval(),
                         eventTypeEntity.getDefaultCost(),
+                        eventTypeEntity.isDisabled(),
                         eventTypeEntity.getParentId()
                 )).toList();
     }
@@ -137,7 +138,8 @@ public class TimeEventsEndpoint {
                 .filter(entity -> isActive == null || entity.isDisabled() != isActive)
                 .map(eventStatusEntity -> new EventStatusDto(
                         eventStatusEntity.getId(),
-                        eventStatusEntity.getCode()
+                        eventStatusEntity.getCode(),
+                        eventStatusEntity.isDisabled()
                 )).toList();
     }
 
@@ -160,7 +162,8 @@ public class TimeEventsEndpoint {
                 .filter(entity -> isActive == null || entity.isDisabled() != isActive)
                 .map(eventStateEntity -> new EventStateDto(
                         eventStateEntity.getId(),
-                        eventStateEntity.getCode()
+                        eventStateEntity.getCode(),
+                        eventStateEntity.isDisabled()
                 )).toList();
     }
 
@@ -211,15 +214,16 @@ public class TimeEventsEndpoint {
                                int defaultDuration,
                                int defaultRepeatInterval,
                                double defaultCost,
+                               boolean isDisabled,
                                Integer parentId) {
     }
 
 
-    public record EventStatusDto(long id, String code) {
+    public record EventStatusDto(long id, String code, boolean isDisabled) {
     }
 
 
-    public record EventStateDto(long id, String code) {
+    public record EventStateDto(long id, String code, boolean isDisabled) {
     }
 
     private void createTranslationsForType(final EventTypeEntity newEntity, String name, String desc) {
