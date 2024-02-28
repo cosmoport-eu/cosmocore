@@ -52,11 +52,15 @@ public class GateEndpoint {
 
     @GetMapping
     @Operation(summary = "Получить все ворота со всеми переводами")
-    public List<GateDto> getAll() {
+    public List<GateDto> getAll(
+            @RequestParam(value = "isActive", required = false) Boolean isActive
+    ) {
         return gateRepository.findAll().stream()
+                .filter(entity -> isActive == null || entity.isDisabled() != isActive)
                 .map(gateEntity -> new GateDto(
                                 gateEntity.getId(),
                                 gateEntity.getCode(),
+                                gateEntity.isDisabled(),
                                 TranslationHelper.getTranslationsByCode(translationRepository, gateEntity.getCode())
                         )
                 )
@@ -65,8 +69,10 @@ public class GateEndpoint {
 
     @GetMapping("/locale/{localeId}")
     @Operation(summary = "Получить все ворота с текстом для указанной локали")
-    public List<GateDtoWithText> getAllWithText(@PathVariable int localeId) {
+    public List<GateDtoWithText> getAllWithText(@PathVariable int localeId,
+                                                @RequestParam(value = "isActive", required = false) Boolean isActive) {
         return gateRepository.findAll().stream()
+                .filter(entity -> isActive == null || entity.isDisabled() != isActive)
                 .map(gateEntity -> {
                     final TranslationEntity translation = translationRepository.findByLocaleIdAndCode(localeId, gateEntity.getCode())
                             .orElseThrow(() -> new IllegalStateException("No translation for gate code " + gateEntity.getCode() + " and locale " + localeId));
@@ -74,7 +80,8 @@ public class GateEndpoint {
                             gateEntity.getId(),
                             translation.getId(),
                             gateEntity.getCode(),
-                            translation.getText()
+                            translation.getText(),
+                            gateEntity.isDisabled()
                     );
                 })
                 .toList();
@@ -121,17 +128,20 @@ public class GateEndpoint {
         return ResultDto.ok();
     }
 
+    @Transactional
     @DeleteMapping("/{id}")
     @Operation(summary = "Удалить ворота по id")
     public ResultDto delete(@PathVariable int id) {
+        gateRepository.findById(id).ifPresentOrElse(gateEntity -> gateEntity.setDisabled(true), () -> {
+            throw new IllegalArgumentException("Not found");
+        });
         eventBus.publishEvent(new ReloadMessage(this));
-        gateRepository.deleteById(id);
         return ResultDto.ok();
     }
 
-    public record GateDto(long id, String code, List<TranslationDto> translations) {
+    public record GateDto(long id, String code, boolean isDisabled, List<TranslationDto> translations) {
     }
 
-    public record GateDtoWithText(long id, int translationId, String code, String text) {
+    public record GateDtoWithText(long id, int translationId, String code, String text, boolean isDisabled) {
     }
 }

@@ -13,9 +13,8 @@ public class EventStateEntity {
     @Id
     @Column(name = "id")
     private int id;
-    @Deprecated
-    @Column(name = "i18n_state")
-    private Integer i18NState;
     @Column(name = "i18n_code")
     private String code;
+    @Column(name = "is_disabled")
+    private boolean isDisabled;
 }

@@ -18,4 +18,7 @@ public class FacilityEntity {
 
     @Column(name = "i18n_code")
     private String code = UUID.randomUUID().toString();
+
+    @Column(name = "is_disabled")
+    private boolean isDisabled;
 }

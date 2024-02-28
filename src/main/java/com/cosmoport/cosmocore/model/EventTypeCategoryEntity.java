@@ -18,4 +18,6 @@ public class EventTypeCategoryEntity {
     private String color;
     @Column(name = "i18n_code")
     private String code;
+    @Column(name = "is_disabled")
+    private boolean isDisabled;
 }

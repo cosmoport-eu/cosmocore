@@ -51,30 +51,32 @@ public class MaterialController {
     @Transactional
     @DeleteMapping("/{id}")
     public ResultDto delete(@PathVariable("id") int id) {
-        materialRepository.findById(id).ifPresentOrElse(materialEntity -> {
-            translationRepository.deleteAllByCode(materialEntity.getCode());
-            materialRepository.deleteById(id);
-        }, () -> {
+        materialRepository.findById(id).ifPresentOrElse(materialEntity -> materialEntity.setDisabled(true), () -> {
             throw new IllegalArgumentException("Material not found");
         });
         return ResultDto.ok();
     }
 
     @GetMapping
-    public List<MaterialDto> getAll(@RequestParam("localeId") int localeId) {
+    public List<MaterialDto> getAll(@RequestParam("localeId") int localeId,
+                                    @RequestParam(value = "isActive", required = false) Boolean isActive) {
         return materialRepository.findAll().stream()
-                .map(facilityEntity -> {
+                .filter(entity -> isActive == null || entity.isDisabled() != isActive)
+                .map(entity -> {
                     final TranslationEntity translation =
-                            translationRepository.findByLocaleIdAndCode(localeId, facilityEntity.getCode()).orElseThrow();
-                    return new MaterialDto(facilityEntity.getId(), facilityEntity.getCode(), translation.getText());
+                            translationRepository.findByLocaleIdAndCode(localeId, entity.getCode()).orElseThrow();
+                    return new MaterialDto(entity.getId(), entity.getCode(), translation.getText(), entity.isDisabled());
                 }).toList();
     }
 
     @GetMapping("/all")
-    public List<MaterialTranslationsDto> getAllWithTranslations() {
+    public List<MaterialTranslationsDto> getAllWithTranslations(
+            @RequestParam(value = "isActive", required = false) Boolean isActive
+    ) {
         return materialRepository.findAll().stream()
+                .filter(entity -> isActive == null || entity.isDisabled() != isActive)
                 .map(entity ->
-                        new MaterialTranslationsDto(entity.getId(), entity.getCode(),
+                        new MaterialTranslationsDto(entity.getId(), entity.getCode(), entity.isDisabled(),
                                 TranslationHelper.getTranslationsByCode(translationRepository, entity.getCode()))).toList();
     }
 
@@ -90,14 +92,14 @@ public class MaterialController {
             materialEntity.setCode(materialCode);
             materialRepository.save(materialEntity);
         }, () -> {
-            throw new IllegalArgumentException("Facility not found");
+            throw new IllegalArgumentException("Entity not found");
         });
         return ResultDto.ok();
     }
 
-    public record MaterialDto(int id, String code, String name) {
+    public record MaterialDto(int id, String code, String name, boolean isDisabled) {
     }
 
-    public record MaterialTranslationsDto(int id, String code, List<TranslationDto> translations) {
+    public record MaterialTranslationsDto(int id, String code, boolean isDisabled, List<TranslationDto> translations) {
     }
 }

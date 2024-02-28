@@ -31,4 +31,6 @@ public class EventTypeEntity {
     private String descCode;
     @Column(name = "parent_id")
     private Integer parentId;
+    @Column(name = "is_disabled")
+    private boolean isDisabled;
 }

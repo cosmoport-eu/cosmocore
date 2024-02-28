@@ -104,39 +104,50 @@ public class TimeEventsEndpoint {
     }
 
     @GetMapping("/types")
-    public List<EventTypeDto> getEventTypes() {
-        return eventTypeRepository.findAll().stream().map(eventTypeEntity -> new EventTypeDto(
-                eventTypeEntity.getId(),
-                eventTypeEntity.getCategoryId(),
-                eventTypeEntity.getNameCode(),
-                eventTypeEntity.getDescCode(),
-                eventTypeEntity.getDefaultDuration(),
-                eventTypeEntity.getDefaultRepeatInterval(),
-                eventTypeEntity.getDefaultCost(),
-                eventTypeEntity.getParentId()
-        )).toList();
+    public List<EventTypeDto> getEventTypes(@RequestParam(value = "isActive", required = false) Boolean isActive) {
+        return eventTypeRepository.findAll().stream()
+                .filter(entity -> isActive == null || entity.isDisabled() != isActive)
+                .map(eventTypeEntity -> new EventTypeDto(
+                        eventTypeEntity.getId(),
+                        eventTypeEntity.getCategoryId(),
+                        eventTypeEntity.getNameCode(),
+                        eventTypeEntity.getDescCode(),
+                        eventTypeEntity.getDefaultDuration(),
+                        eventTypeEntity.getDefaultRepeatInterval(),
+                        eventTypeEntity.getDefaultCost(),
+                        eventTypeEntity.isDisabled(),
+                        eventTypeEntity.getParentId()
+                )).toList();
     }
 
-
+    @Transactional
     @DeleteMapping("/type/{id}")
     public String delete(@PathVariable("id") final int id) {
-        eventTypeRepository.deleteById(id);
+        eventTypeRepository.findById(id)
+                .ifPresentOrElse(entity -> entity.setDisabled(true),
+                        () -> {
+                            throw new IllegalArgumentException("Not found");
+                        });
         eventBus.publishEvent(new ReloadMessage(this));
         return "{\"deleted\": " + true + '}';
     }
 
     @GetMapping("/statuses")
-    public List<EventStatusDto> getEventStatuses() {
-        return eventStatusRepository.findAll().stream().map(eventStatusEntity -> new EventStatusDto(
-                eventStatusEntity.getId(),
-                eventStatusEntity.getCode()
-        )).toList();
+    public List<EventStatusDto> getEventStatuses(@RequestParam(value = "isActive", required = false) Boolean isActive) {
+        return eventStatusRepository.findAll().stream()
+                .filter(entity -> isActive == null || entity.isDisabled() != isActive)
+                .map(eventStatusEntity -> new EventStatusDto(
+                        eventStatusEntity.getId(),
+                        eventStatusEntity.getCode(),
+                        eventStatusEntity.isDisabled()
+                )).toList();
     }
 
+    @Transactional
     @DeleteMapping("/status/{id}")
     public ResultDto deleteStatus(@PathVariable("id") final int id) {
         eventStatusRepository.findById(id).ifPresentOrElse(state -> {
-                    eventStatusRepository.deleteById(id);
+                    state.setDisabled(true);
                     eventBus.publishEvent(new ReloadMessage(this));
                 },
                 () -> {
@@ -146,17 +157,21 @@ public class TimeEventsEndpoint {
     }
 
     @GetMapping("/states")
-    public List<EventStateDto> getEventStates() {
-        return eventStateRepository.findAll().stream().map(eventStateEntity -> new EventStateDto(
-                eventStateEntity.getId(),
-                eventStateEntity.getCode()
-        )).toList();
+    public List<EventStateDto> getEventStates(@RequestParam(value = "isActive", required = false) Boolean isActive) {
+        return eventStateRepository.findAll().stream()
+                .filter(entity -> isActive == null || entity.isDisabled() != isActive)
+                .map(eventStateEntity -> new EventStateDto(
+                        eventStateEntity.getId(),
+                        eventStateEntity.getCode(),
+                        eventStateEntity.isDisabled()
+                )).toList();
     }
 
+    @Transactional
     @DeleteMapping("/state/{id}")
     public ResultDto deleteState(@PathVariable("id") final int id) {
         eventStateRepository.findById(id).ifPresentOrElse(state -> {
-                    eventStateRepository.deleteById(id);
+                    state.setDisabled(true);
                     eventBus.publishEvent(new ReloadMessage(this));
                 },
                 () -> {
@@ -199,15 +214,16 @@ public class TimeEventsEndpoint {
                                int defaultDuration,
                                int defaultRepeatInterval,
                                double defaultCost,
+                               boolean isDisabled,
                                Integer parentId) {
     }
 
 
-    public record EventStatusDto(long id, String code) {
+    public record EventStatusDto(long id, String code, boolean isDisabled) {
     }
 
 
-    public record EventStateDto(long id, String code) {
+    public record EventStateDto(long id, String code, boolean isDisabled) {
     }
 
     private void createTranslationsForType(final EventTypeEntity newEntity, String name, String desc) {

@@ -56,18 +56,17 @@ public class CategoryController {
     @Transactional
     @DeleteMapping("/{id}")
     public ResultDto delete(@PathVariable("id") int id) {
-        categoryRepository.findById(id).ifPresentOrElse(entity -> {
-            translationRepository.deleteAllByCode(entity.getCode());
-            categoryRepository.deleteById(id);
-        }, () -> {
+        categoryRepository.findById(id).ifPresentOrElse(entity -> entity.setDisabled(true), () -> {
             throw new IllegalArgumentException("Not found");
         });
         return ResultDto.ok();
     }
 
     @GetMapping
-    public List<CategoryDto> getAll(@RequestParam("localeId") int localeId) {
+    public List<CategoryDto> getAll(@RequestParam("localeId") int localeId,
+                                    @RequestParam(value = "isActive", required = false) Boolean isActive) {
         return categoryRepository.findAll().stream()
+                .filter(entity -> isActive == null || entity.isDisabled() != isActive)
                 .map(entity -> {
                     final TranslationEntity translation =
                             translationRepository.findByLocaleIdAndCode(localeId, entity.getCode()).orElseThrow();
@@ -75,16 +74,19 @@ public class CategoryController {
                             entity.getId(),
                             entity.getCode(),
                             translation.getText(),
-                            entity.getColor()
+                            entity.getColor(),
+                            entity.isDisabled()
                     );
                 }).toList();
     }
 
     @GetMapping("/all")
-    public List<CategoryTranslationsDto> getAllWithTranslations() {
+    public List<CategoryTranslationsDto> getAllWithTranslations(
+            @RequestParam(value = "isActive", required = false) Boolean isActive) {
         return categoryRepository.findAll().stream()
+                .filter(entity -> isActive == null || entity.isDisabled() != isActive)
                 .map(entity ->
-                        new CategoryTranslationsDto(entity.getId(), entity.getCode(), entity.getColor(),
+                        new CategoryTranslationsDto(entity.getId(), entity.getCode(), entity.getColor(), entity.isDisabled(),
                                 TranslationHelper.getTranslationsByCode(translationRepository, entity.getCode()))).toList();
     }
 
@@ -108,10 +110,10 @@ public class CategoryController {
     public record CreateCategoryDto(String name, String color) {
     }
 
-    public record CategoryDto(int id, String code, String name, String color) {
+    public record CategoryDto(int id, String code, String name, String color, boolean isDisabled) {
     }
 
-    public record CategoryTranslationsDto(int id, String code, String color,
+    public record CategoryTranslationsDto(int id, String code, String color, boolean isDisabled,
                                           List<TranslationDto> translations) {
     }
 }
