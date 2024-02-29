@@ -4,13 +4,20 @@ import com.cosmoport.cosmocore.controller.dto.ResultDto;
 import com.cosmoport.cosmocore.controller.helper.TranslationHelper;
 import com.cosmoport.cosmocore.events.ReloadMessage;
 import com.cosmoport.cosmocore.model.EventTypeEntity;
+import com.cosmoport.cosmocore.model.MaterialEntity;
 import com.cosmoport.cosmocore.repository.*;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.annotation.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+
+import static java.util.function.Predicate.not;
 
 @RestController
 @RequestMapping("/t_events")
@@ -21,6 +28,7 @@ public class TimeEventsEndpoint {
     private final EventStatusRepository eventStatusRepository;
     private final EventStateRepository eventStateRepository;
     private final TranslationRepository translationRepository;
+    private final MaterialRepository materialRepository;
     private final LocaleRepository localeRepository;
     private final ApplicationEventPublisher eventBus;
 
@@ -28,27 +36,33 @@ public class TimeEventsEndpoint {
                               EventStatusRepository eventStatusRepository,
                               EventStateRepository eventStateRepository,
                               TranslationRepository translationRepository,
+                              MaterialRepository materialRepository,
                               LocaleRepository localeRepository,
                               ApplicationEventPublisher eventBus) {
         this.eventTypeRepository = eventTypeRepository;
         this.eventStatusRepository = eventStatusRepository;
         this.eventStateRepository = eventStateRepository;
         this.translationRepository = translationRepository;
+        this.materialRepository = materialRepository;
         this.localeRepository = localeRepository;
         this.eventBus = eventBus;
     }
 
     @Transactional
     @PostMapping("/type")
+    @Operation(description = "Создание нового типа события вместе с его подтипами")
     public ResultDto create(@RequestBody CreateEventTypeDto dto) {
         final EventTypeEntity newEntity = eventTypeRepository.save(typeFromDto(dto));
         createTranslationsForType(newEntity, dto.name(), dto.description());
+
+        bindMaterials(dto.materialIds(), newEntity);
 
         if (dto.subTypes() != null) {
             dto.subTypes().forEach(subType -> {
                 final EventTypeEntity subEntity = eventTypeRepository.save(typeFromDto(dto));
                 subEntity.setParentId(newEntity.getId());
                 createTranslationsForType(subEntity, subType.name(), subType.description());
+                bindMaterials(subType.materialIds(), subEntity);
             });
         }
 
@@ -57,14 +71,39 @@ public class TimeEventsEndpoint {
 
     @Transactional
     @PostMapping("/type/{id}")
+    @Operation(description = "Изменение типа события и его аттрибутов")
     public ResultDto updateType(@RequestBody UpdateEventTypeDto dto, @PathVariable int id) {
-        eventTypeRepository.findById(id).ifPresentOrElse(e -> {
-            e.setCategoryId(dto.categoryId());
-            e.setDefaultDuration(dto.defaultDuration());
-            e.setDefaultCost(dto.defaultCost());
-            e.setDefaultRepeatInterval(dto.defaultRepeatInterval());
-            e.setParentId(dto.parentId());
-            eventTypeRepository.save(e);
+        eventTypeRepository.findById(id).ifPresentOrElse(eventType -> {
+            eventType.setCategoryId(dto.categoryId());
+            eventType.setDefaultDuration(dto.defaultDuration());
+            eventType.setDefaultCost(dto.defaultCost());
+            eventType.setDefaultRepeatInterval(dto.defaultRepeatInterval());
+            eventType.setParentId(dto.parentId());
+
+            if (dto.materialIds() != null) {
+                final List<MaterialEntity> newMaterials = materialRepository.findAllById(dto.materialIds());
+                final Set<MaterialEntity> oldMaterials = eventType.getMaterials();
+
+                final List<MaterialEntity> materialsToAdd = newMaterials.stream()
+                        .filter(not(oldMaterials::contains))
+                        .toList();
+
+                final List<MaterialEntity> materialsToDelete = oldMaterials.stream()
+                        .filter(not(newMaterials::contains))
+                        .toList();
+
+                materialsToAdd.forEach(materialToAdd -> {
+                    materialToAdd.getEventTypes().add(eventType);
+                    eventType.getMaterials().add(materialToAdd);
+                });
+
+                materialsToDelete.forEach(materialToDelete -> {
+                    materialToDelete.getEventTypes().remove(eventType);
+                    eventType.getMaterials().remove(materialToDelete);
+                });
+            }
+
+            eventTypeRepository.save(eventType);
             eventBus.publishEvent(new ReloadMessage(this));
         }, () -> {
             throw new IllegalArgumentException();
@@ -188,9 +227,8 @@ public class TimeEventsEndpoint {
             int defaultDuration,
             int defaultRepeatInterval,
             double defaultCost,
-            String name,
-            String description,
-            Integer parentId) {
+            Integer parentId,
+            Set<Integer> materialIds) {
     }
 
     public record CreateEventTypeDto(
@@ -201,10 +239,11 @@ public class TimeEventsEndpoint {
             int defaultRepeatInterval,
             double defaultCost,
             Integer parentId,
-            List<SubType> subTypes) {
+            Set<SubType> subTypes,
+            Set<Integer> materialIds) {
     }
 
-    public record SubType(String name, String description) {
+    public record SubType(String name, String description, List<Integer> materialIds) {
     }
 
     public record EventTypeDto(int id,
@@ -243,6 +282,15 @@ public class TimeEventsEndpoint {
         translationRepository.saveAll(
                 TranslationHelper.createTranslationForCodeAndDefaultText(localeRepository, newEntity.getDescCode(), desc)
         );
+    }
+
+    private void bindMaterials(@Nullable final Collection<Integer> materialIds, final EventTypeEntity newEntity) {
+        if (materialIds != null && !materialIds.isEmpty()) {
+            final List<MaterialEntity> materials = materialRepository.findAllById(materialIds);
+            materials.forEach(materialEntity -> materialEntity.getEventTypes().add(newEntity));
+            newEntity.getMaterials().clear();
+            newEntity.getMaterials().addAll(materials);
+        }
     }
 
     private EventTypeEntity typeFromDto(CreateEventTypeDto dto) {

@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Setter
 @Getter
 @Entity
@@ -33,4 +36,16 @@ public class EventTypeEntity {
     private Integer parentId;
     @Column(name = "is_disabled")
     private boolean isDisabled;
+    @ManyToMany
+    @JoinTable(
+            name = "EVENT_TYPE__MATERIAL",
+            joinColumns = @JoinColumn(name = "event_type_id"),
+            inverseJoinColumns = @JoinColumn(name = "material_id"))
+    private Set<MaterialEntity> materials = new HashSet<>();
+    @ManyToMany
+    @JoinTable(
+            name = "EVENT_TYPE__FACILITY",
+            joinColumns = @JoinColumn(name = "event_type_id"),
+            inverseJoinColumns = @JoinColumn(name = "facility_id"))
+    private Set<FacilityEntity> facilities = new HashSet<>();
 }
