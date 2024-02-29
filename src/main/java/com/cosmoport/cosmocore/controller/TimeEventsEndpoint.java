@@ -16,6 +16,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static java.util.function.Predicate.not;
 
@@ -143,6 +144,7 @@ public class TimeEventsEndpoint {
     }
 
     @GetMapping("/types")
+    @Transactional
     public List<EventTypeDto> getEventTypes(@RequestParam(value = "isActive", required = false) Boolean isActive) {
         return eventTypeRepository.findAll().stream()
                 .filter(entity -> isActive == null || entity.isDisabled() != isActive)
@@ -155,7 +157,8 @@ public class TimeEventsEndpoint {
                         eventTypeEntity.getDefaultRepeatInterval(),
                         eventTypeEntity.getDefaultCost(),
                         eventTypeEntity.isDisabled(),
-                        eventTypeEntity.getParentId()
+                        eventTypeEntity.getParentId(),
+                        eventTypeEntity.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet())
                 )).toList();
     }
 
@@ -254,7 +257,8 @@ public class TimeEventsEndpoint {
                                int defaultRepeatInterval,
                                double defaultCost,
                                boolean isDisabled,
-                               Integer parentId) {
+                               Integer parentId,
+                               Set<Integer> materialIds) {
     }
 
 
