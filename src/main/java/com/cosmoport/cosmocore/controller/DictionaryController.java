@@ -112,7 +112,7 @@ public class DictionaryController {
                                double defaultCost,
                                boolean isDisabled,
                                Set<Integer> materialIds,
-                               Set<Integer> facilitiesIds) {
+                               Set<Integer> facilityIds) {
     }
 
 

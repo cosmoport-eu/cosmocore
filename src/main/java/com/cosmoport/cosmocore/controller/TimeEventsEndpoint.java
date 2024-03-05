@@ -62,7 +62,7 @@ public class TimeEventsEndpoint {
         createTranslationsForType(newEntity, dto.name(), dto.description());
 
         bindMaterials(dto.materialIds(), newEntity);
-        bindFacilities(dto.facilitiesIds(), newEntity);
+        bindFacilities(dto.facilityIds(), newEntity);
 
         if (dto.subTypes() != null) {
             dto.subTypes().forEach(subType -> {
@@ -70,7 +70,7 @@ public class TimeEventsEndpoint {
                 subEntity.setParentId(newEntity.getId());
                 createTranslationsForType(subEntity, subType.name(), subType.description());
                 bindMaterials(subType.materialIds(), subEntity);
-                bindFacilities(subType.facilitiesIds(), subEntity);
+                bindFacilities(subType.facilityIds(), subEntity);
             });
         }
 
@@ -95,9 +95,9 @@ public class TimeEventsEndpoint {
                         EventTypeEntity::getMaterials,
                         MaterialEntity::getEventTypes);
             }
-            if (dto.facilitiesIds() != null) {
+            if (dto.facilityIds() != null) {
                 updateAttributes(
-                        facilityRepository.findAllById(dto.facilitiesIds()),
+                        facilityRepository.findAllById(dto.facilityIds()),
                         eventType,
                         EventTypeEntity::getFacilities,
                         FacilityEntity::getEventTypes);
@@ -257,7 +257,7 @@ public class TimeEventsEndpoint {
             double defaultCost,
             Integer parentId,
             Set<Integer> materialIds,
-            Set<Integer> facilitiesIds) {
+            Set<Integer> facilityIds) {
     }
 
     public record CreateEventTypeDto(
@@ -270,10 +270,10 @@ public class TimeEventsEndpoint {
             Integer parentId,
             Set<SubType> subTypes,
             Set<Integer> materialIds,
-            Set<Integer> facilitiesIds) {
+            Set<Integer> facilityIds) {
     }
 
-    public record SubType(String name, String description, List<Integer> materialIds, Set<Integer> facilitiesIds) {
+    public record SubType(String name, String description, List<Integer> materialIds, Set<Integer> facilityIds) {
     }
 
     public record EventTypeDto(int id,
@@ -286,7 +286,7 @@ public class TimeEventsEndpoint {
                                boolean isDisabled,
                                Integer parentId,
                                Set<Integer> materialIds,
-                               Set<Integer> facilitiesIds) {
+                               Set<Integer> facilityIds) {
     }
 
 
@@ -316,9 +316,9 @@ public class TimeEventsEndpoint {
         );
     }
 
-    private void bindFacilities(@Nullable final Collection<Integer> facilitiesIds, final EventTypeEntity newEntity) {
-        if (facilitiesIds != null && !facilitiesIds.isEmpty()) {
-            final List<FacilityEntity> facilities = facilityRepository.findAllById(facilitiesIds);
+    private void bindFacilities(@Nullable final Collection<Integer> facilityIds, final EventTypeEntity newEntity) {
+        if (facilityIds != null && !facilityIds.isEmpty()) {
+            final List<FacilityEntity> facilities = facilityRepository.findAllById(facilityIds);
             facilities.forEach(entity -> entity.getEventTypes().add(newEntity));
             newEntity.getFacilities().clear();
             newEntity.getFacilities().addAll(facilities);
