@@ -2,6 +2,7 @@ package com.cosmoport.cosmocore.controller;
 
 import com.cosmoport.cosmocore.controller.dto.TranslationDto;
 import com.cosmoport.cosmocore.controller.helper.TranslationHelper;
+import com.cosmoport.cosmocore.model.FacilityEntity;
 import com.cosmoport.cosmocore.model.MaterialEntity;
 import com.cosmoport.cosmocore.repository.*;
 import io.swagger.v3.oas.annotations.Operation;
@@ -80,7 +81,8 @@ public class DictionaryController {
                         eventTypeEntity.getDefaultRepeatInterval(),
                         eventTypeEntity.getDefaultCost(),
                         eventTypeEntity.isDisabled(),
-                        eventTypeEntity.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet())
+                        eventTypeEntity.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet()),
+                        eventTypeEntity.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet())
                 )).toList();
     }
 
@@ -109,7 +111,8 @@ public class DictionaryController {
                                int defaultRepeatInterval,
                                double defaultCost,
                                boolean isDisabled,
-                               Set<Integer> materialIds) {
+                               Set<Integer> materialIds,
+                               Set<Integer> facilitiesIds) {
     }
 
 

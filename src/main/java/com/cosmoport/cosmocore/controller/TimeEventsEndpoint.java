@@ -4,6 +4,7 @@ import com.cosmoport.cosmocore.controller.dto.ResultDto;
 import com.cosmoport.cosmocore.controller.helper.TranslationHelper;
 import com.cosmoport.cosmocore.events.ReloadMessage;
 import com.cosmoport.cosmocore.model.EventTypeEntity;
+import com.cosmoport.cosmocore.model.FacilityEntity;
 import com.cosmoport.cosmocore.model.MaterialEntity;
 import com.cosmoport.cosmocore.repository.*;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,6 +17,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.util.function.Predicate.not;
@@ -30,6 +32,7 @@ public class TimeEventsEndpoint {
     private final EventStateRepository eventStateRepository;
     private final TranslationRepository translationRepository;
     private final MaterialRepository materialRepository;
+    private final FacilityRepository facilityRepository;
     private final LocaleRepository localeRepository;
     private final ApplicationEventPublisher eventBus;
 
@@ -38,6 +41,7 @@ public class TimeEventsEndpoint {
                               EventStateRepository eventStateRepository,
                               TranslationRepository translationRepository,
                               MaterialRepository materialRepository,
+                              FacilityRepository facilityRepository,
                               LocaleRepository localeRepository,
                               ApplicationEventPublisher eventBus) {
         this.eventTypeRepository = eventTypeRepository;
@@ -45,6 +49,7 @@ public class TimeEventsEndpoint {
         this.eventStateRepository = eventStateRepository;
         this.translationRepository = translationRepository;
         this.materialRepository = materialRepository;
+        this.facilityRepository = facilityRepository;
         this.localeRepository = localeRepository;
         this.eventBus = eventBus;
     }
@@ -57,6 +62,7 @@ public class TimeEventsEndpoint {
         createTranslationsForType(newEntity, dto.name(), dto.description());
 
         bindMaterials(dto.materialIds(), newEntity);
+        bindFacilities(dto.facilitiesIds(), newEntity);
 
         if (dto.subTypes() != null) {
             dto.subTypes().forEach(subType -> {
@@ -64,6 +70,7 @@ public class TimeEventsEndpoint {
                 subEntity.setParentId(newEntity.getId());
                 createTranslationsForType(subEntity, subType.name(), subType.description());
                 bindMaterials(subType.materialIds(), subEntity);
+                bindFacilities(subType.facilitiesIds(), subEntity);
             });
         }
 
@@ -82,26 +89,18 @@ public class TimeEventsEndpoint {
             eventType.setParentId(dto.parentId());
 
             if (dto.materialIds() != null) {
-                final List<MaterialEntity> newMaterials = materialRepository.findAllById(dto.materialIds());
-                final Set<MaterialEntity> oldMaterials = eventType.getMaterials();
-
-                final List<MaterialEntity> materialsToAdd = newMaterials.stream()
-                        .filter(not(oldMaterials::contains))
-                        .toList();
-
-                final List<MaterialEntity> materialsToDelete = oldMaterials.stream()
-                        .filter(not(newMaterials::contains))
-                        .toList();
-
-                materialsToAdd.forEach(materialToAdd -> {
-                    materialToAdd.getEventTypes().add(eventType);
-                    eventType.getMaterials().add(materialToAdd);
-                });
-
-                materialsToDelete.forEach(materialToDelete -> {
-                    materialToDelete.getEventTypes().remove(eventType);
-                    eventType.getMaterials().remove(materialToDelete);
-                });
+                updateAttributes(
+                        materialRepository.findAllById(dto.materialIds()),
+                        eventType,
+                        EventTypeEntity::getMaterials,
+                        MaterialEntity::getEventTypes);
+            }
+            if (dto.facilitiesIds() != null) {
+                updateAttributes(
+                        facilityRepository.findAllById(dto.facilitiesIds()),
+                        eventType,
+                        EventTypeEntity::getFacilities,
+                        FacilityEntity::getEventTypes);
             }
 
             eventTypeRepository.save(eventType);
@@ -111,6 +110,31 @@ public class TimeEventsEndpoint {
         });
 
         return ResultDto.ok();
+    }
+
+    private <T> void updateAttributes(List<T> newMaterials,
+                                      EventTypeEntity eventType,
+                                      Function<EventTypeEntity, Collection<T>> materialsGetter,
+                                      Function<T, Set<EventTypeEntity>> eventTypesGetter) {
+        final Collection<T> oldMaterials = materialsGetter.apply(eventType);
+
+        final List<T> materialsToAdd = newMaterials.stream()
+                .filter(not(oldMaterials::contains))
+                .toList();
+
+        final List<T> materialsToDelete = oldMaterials.stream()
+                .filter(not(newMaterials::contains))
+                .toList();
+
+        materialsToAdd.forEach(materialToAdd -> {
+            eventTypesGetter.apply(materialToAdd).add(eventType);
+            materialsGetter.apply(eventType).add(materialToAdd);
+        });
+
+        materialsToDelete.forEach(materialToDelete -> {
+            eventTypesGetter.apply(materialToDelete).remove(eventType);
+            materialsGetter.apply(eventType).remove(materialToDelete);
+        });
     }
 
     @Transactional
@@ -158,7 +182,8 @@ public class TimeEventsEndpoint {
                         eventTypeEntity.getDefaultCost(),
                         eventTypeEntity.isDisabled(),
                         eventTypeEntity.getParentId(),
-                        eventTypeEntity.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet())
+                        eventTypeEntity.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet()),
+                        eventTypeEntity.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet())
                 )).toList();
     }
 
@@ -231,7 +256,8 @@ public class TimeEventsEndpoint {
             int defaultRepeatInterval,
             double defaultCost,
             Integer parentId,
-            Set<Integer> materialIds) {
+            Set<Integer> materialIds,
+            Set<Integer> facilitiesIds) {
     }
 
     public record CreateEventTypeDto(
@@ -243,10 +269,11 @@ public class TimeEventsEndpoint {
             double defaultCost,
             Integer parentId,
             Set<SubType> subTypes,
-            Set<Integer> materialIds) {
+            Set<Integer> materialIds,
+            Set<Integer> facilitiesIds) {
     }
 
-    public record SubType(String name, String description, List<Integer> materialIds) {
+    public record SubType(String name, String description, List<Integer> materialIds, Set<Integer> facilitiesIds) {
     }
 
     public record EventTypeDto(int id,
@@ -258,7 +285,8 @@ public class TimeEventsEndpoint {
                                double defaultCost,
                                boolean isDisabled,
                                Integer parentId,
-                               Set<Integer> materialIds) {
+                               Set<Integer> materialIds,
+                               Set<Integer> facilitiesIds) {
     }
 
 
@@ -286,6 +314,15 @@ public class TimeEventsEndpoint {
         translationRepository.saveAll(
                 TranslationHelper.createTranslationForCodeAndDefaultText(localeRepository, newEntity.getDescCode(), desc)
         );
+    }
+
+    private void bindFacilities(@Nullable final Collection<Integer> facilitiesIds, final EventTypeEntity newEntity) {
+        if (facilitiesIds != null && !facilitiesIds.isEmpty()) {
+            final List<FacilityEntity> facilities = facilityRepository.findAllById(facilitiesIds);
+            facilities.forEach(entity -> entity.getEventTypes().add(newEntity));
+            newEntity.getFacilities().clear();
+            newEntity.getFacilities().addAll(facilities);
+        }
     }
 
     private void bindMaterials(@Nullable final Collection<Integer> materialIds, final EventTypeEntity newEntity) {
