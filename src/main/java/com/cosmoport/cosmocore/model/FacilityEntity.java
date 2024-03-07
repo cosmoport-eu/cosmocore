@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Setter
@@ -21,4 +23,7 @@ public class FacilityEntity {
 
     @Column(name = "is_disabled")
     private boolean isDisabled;
+
+    @ManyToMany(mappedBy = "facilities")
+    private Set<EventTypeEntity> eventTypes = new HashSet<>();
 }

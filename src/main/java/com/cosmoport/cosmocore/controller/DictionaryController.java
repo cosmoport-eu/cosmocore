@@ -2,14 +2,19 @@ package com.cosmoport.cosmocore.controller;
 
 import com.cosmoport.cosmocore.controller.dto.TranslationDto;
 import com.cosmoport.cosmocore.controller.helper.TranslationHelper;
+import com.cosmoport.cosmocore.model.FacilityEntity;
+import com.cosmoport.cosmocore.model.MaterialEntity;
 import com.cosmoport.cosmocore.repository.*;
 import io.swagger.v3.oas.annotations.Operation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/dictionary")
@@ -60,6 +65,7 @@ public class DictionaryController {
     }
 
     @GetMapping("/types")
+    @Transactional
     @Operation(summary = "Get event type ids to i18n codes map (name and description)")
     public List<EventTypeDto> getEventTypes(@RequestParam(value = "isActive", required = false) Boolean isActive) {
         return eventTypesRepository.findAll().stream()
@@ -74,7 +80,9 @@ public class DictionaryController {
                         eventTypeEntity.getDefaultDuration(),
                         eventTypeEntity.getDefaultRepeatInterval(),
                         eventTypeEntity.getDefaultCost(),
-                        eventTypeEntity.isDisabled()
+                        eventTypeEntity.isDisabled(),
+                        eventTypeEntity.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet()),
+                        eventTypeEntity.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet())
                 )).toList();
     }
 
@@ -102,7 +110,9 @@ public class DictionaryController {
                                int defaultDuration,
                                int defaultRepeatInterval,
                                double defaultCost,
-                               boolean isDisabled) {
+                               boolean isDisabled,
+                               Set<Integer> materialIds,
+                               Set<Integer> facilityIds) {
     }
 
 

@@ -4,13 +4,23 @@ import com.cosmoport.cosmocore.controller.dto.ResultDto;
 import com.cosmoport.cosmocore.controller.helper.TranslationHelper;
 import com.cosmoport.cosmocore.events.ReloadMessage;
 import com.cosmoport.cosmocore.model.EventTypeEntity;
+import com.cosmoport.cosmocore.model.FacilityEntity;
+import com.cosmoport.cosmocore.model.MaterialEntity;
 import com.cosmoport.cosmocore.repository.*;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.annotation.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static java.util.function.Predicate.not;
 
 @RestController
 @RequestMapping("/t_events")
@@ -21,6 +31,8 @@ public class TimeEventsEndpoint {
     private final EventStatusRepository eventStatusRepository;
     private final EventStateRepository eventStateRepository;
     private final TranslationRepository translationRepository;
+    private final MaterialRepository materialRepository;
+    private final FacilityRepository facilityRepository;
     private final LocaleRepository localeRepository;
     private final ApplicationEventPublisher eventBus;
 
@@ -28,27 +40,37 @@ public class TimeEventsEndpoint {
                               EventStatusRepository eventStatusRepository,
                               EventStateRepository eventStateRepository,
                               TranslationRepository translationRepository,
+                              MaterialRepository materialRepository,
+                              FacilityRepository facilityRepository,
                               LocaleRepository localeRepository,
                               ApplicationEventPublisher eventBus) {
         this.eventTypeRepository = eventTypeRepository;
         this.eventStatusRepository = eventStatusRepository;
         this.eventStateRepository = eventStateRepository;
         this.translationRepository = translationRepository;
+        this.materialRepository = materialRepository;
+        this.facilityRepository = facilityRepository;
         this.localeRepository = localeRepository;
         this.eventBus = eventBus;
     }
 
     @Transactional
     @PostMapping("/type")
+    @Operation(description = "Создание нового типа события вместе с его подтипами")
     public ResultDto create(@RequestBody CreateEventTypeDto dto) {
         final EventTypeEntity newEntity = eventTypeRepository.save(typeFromDto(dto));
         createTranslationsForType(newEntity, dto.name(), dto.description());
+
+        bindMaterials(dto.materialIds(), newEntity);
+        bindFacilities(dto.facilityIds(), newEntity);
 
         if (dto.subTypes() != null) {
             dto.subTypes().forEach(subType -> {
                 final EventTypeEntity subEntity = eventTypeRepository.save(typeFromDto(dto));
                 subEntity.setParentId(newEntity.getId());
                 createTranslationsForType(subEntity, subType.name(), subType.description());
+                bindMaterials(subType.materialIds(), subEntity);
+                bindFacilities(subType.facilityIds(), subEntity);
             });
         }
 
@@ -57,20 +79,62 @@ public class TimeEventsEndpoint {
 
     @Transactional
     @PostMapping("/type/{id}")
+    @Operation(description = "Изменение типа события и его аттрибутов")
     public ResultDto updateType(@RequestBody UpdateEventTypeDto dto, @PathVariable int id) {
-        eventTypeRepository.findById(id).ifPresentOrElse(e -> {
-            e.setCategoryId(dto.categoryId());
-            e.setDefaultDuration(dto.defaultDuration());
-            e.setDefaultCost(dto.defaultCost());
-            e.setDefaultRepeatInterval(dto.defaultRepeatInterval());
-            e.setParentId(dto.parentId());
-            eventTypeRepository.save(e);
+        eventTypeRepository.findById(id).ifPresentOrElse(eventType -> {
+            eventType.setCategoryId(dto.categoryId());
+            eventType.setDefaultDuration(dto.defaultDuration());
+            eventType.setDefaultCost(dto.defaultCost());
+            eventType.setDefaultRepeatInterval(dto.defaultRepeatInterval());
+            eventType.setParentId(dto.parentId());
+
+            if (dto.materialIds() != null) {
+                updateAttributes(
+                        materialRepository.findAllById(dto.materialIds()),
+                        eventType,
+                        EventTypeEntity::getMaterials,
+                        MaterialEntity::getEventTypes);
+            }
+            if (dto.facilityIds() != null) {
+                updateAttributes(
+                        facilityRepository.findAllById(dto.facilityIds()),
+                        eventType,
+                        EventTypeEntity::getFacilities,
+                        FacilityEntity::getEventTypes);
+            }
+
+            eventTypeRepository.save(eventType);
             eventBus.publishEvent(new ReloadMessage(this));
         }, () -> {
             throw new IllegalArgumentException();
         });
 
         return ResultDto.ok();
+    }
+
+    private <T> void updateAttributes(List<T> newMaterials,
+                                      EventTypeEntity eventType,
+                                      Function<EventTypeEntity, Collection<T>> materialsGetter,
+                                      Function<T, Set<EventTypeEntity>> eventTypesGetter) {
+        final Collection<T> oldMaterials = materialsGetter.apply(eventType);
+
+        final List<T> materialsToAdd = newMaterials.stream()
+                .filter(not(oldMaterials::contains))
+                .toList();
+
+        final List<T> materialsToDelete = oldMaterials.stream()
+                .filter(not(newMaterials::contains))
+                .toList();
+
+        materialsToAdd.forEach(materialToAdd -> {
+            eventTypesGetter.apply(materialToAdd).add(eventType);
+            materialsGetter.apply(eventType).add(materialToAdd);
+        });
+
+        materialsToDelete.forEach(materialToDelete -> {
+            eventTypesGetter.apply(materialToDelete).remove(eventType);
+            materialsGetter.apply(eventType).remove(materialToDelete);
+        });
     }
 
     @Transactional
@@ -104,6 +168,7 @@ public class TimeEventsEndpoint {
     }
 
     @GetMapping("/types")
+    @Transactional
     public List<EventTypeDto> getEventTypes(@RequestParam(value = "isActive", required = false) Boolean isActive) {
         return eventTypeRepository.findAll().stream()
                 .filter(entity -> isActive == null || entity.isDisabled() != isActive)
@@ -116,7 +181,9 @@ public class TimeEventsEndpoint {
                         eventTypeEntity.getDefaultRepeatInterval(),
                         eventTypeEntity.getDefaultCost(),
                         eventTypeEntity.isDisabled(),
-                        eventTypeEntity.getParentId()
+                        eventTypeEntity.getParentId(),
+                        eventTypeEntity.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet()),
+                        eventTypeEntity.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet())
                 )).toList();
     }
 
@@ -188,9 +255,9 @@ public class TimeEventsEndpoint {
             int defaultDuration,
             int defaultRepeatInterval,
             double defaultCost,
-            String name,
-            String description,
-            Integer parentId) {
+            Integer parentId,
+            Set<Integer> materialIds,
+            Set<Integer> facilityIds) {
     }
 
     public record CreateEventTypeDto(
@@ -201,10 +268,12 @@ public class TimeEventsEndpoint {
             int defaultRepeatInterval,
             double defaultCost,
             Integer parentId,
-            List<SubType> subTypes) {
+            Set<SubType> subTypes,
+            Set<Integer> materialIds,
+            Set<Integer> facilityIds) {
     }
 
-    public record SubType(String name, String description) {
+    public record SubType(String name, String description, List<Integer> materialIds, Set<Integer> facilityIds) {
     }
 
     public record EventTypeDto(int id,
@@ -215,7 +284,9 @@ public class TimeEventsEndpoint {
                                int defaultRepeatInterval,
                                double defaultCost,
                                boolean isDisabled,
-                               Integer parentId) {
+                               Integer parentId,
+                               Set<Integer> materialIds,
+                               Set<Integer> facilityIds) {
     }
 
 
@@ -243,6 +314,24 @@ public class TimeEventsEndpoint {
         translationRepository.saveAll(
                 TranslationHelper.createTranslationForCodeAndDefaultText(localeRepository, newEntity.getDescCode(), desc)
         );
+    }
+
+    private void bindFacilities(@Nullable final Collection<Integer> facilityIds, final EventTypeEntity newEntity) {
+        if (facilityIds != null && !facilityIds.isEmpty()) {
+            final List<FacilityEntity> facilities = facilityRepository.findAllById(facilityIds);
+            facilities.forEach(entity -> entity.getEventTypes().add(newEntity));
+            newEntity.getFacilities().clear();
+            newEntity.getFacilities().addAll(facilities);
+        }
+    }
+
+    private void bindMaterials(@Nullable final Collection<Integer> materialIds, final EventTypeEntity newEntity) {
+        if (materialIds != null && !materialIds.isEmpty()) {
+            final List<MaterialEntity> materials = materialRepository.findAllById(materialIds);
+            materials.forEach(materialEntity -> materialEntity.getEventTypes().add(newEntity));
+            newEntity.getMaterials().clear();
+            newEntity.getMaterials().addAll(materials);
+        }
     }
 
     private EventTypeEntity typeFromDto(CreateEventTypeDto dto) {

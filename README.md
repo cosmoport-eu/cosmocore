@@ -1,7 +1,7 @@
 # Cosmoport Core
 
 
-[API](http://localhost:8081/swagger-ui/index.html) (Available whe app is running)
+[API](http://localhost:8081/swagger-ui/index.html) (Available when app is running)
 
 ## Default settings
 
