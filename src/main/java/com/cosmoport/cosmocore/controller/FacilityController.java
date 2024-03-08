@@ -33,7 +33,7 @@ public class FacilityController {
     }
 
     @PostMapping
-    public ResultDto create(@RequestBody String name) {
+    public ResultDto create(@RequestBody Object name) {
         final FacilityEntity entity = new FacilityEntity();
         entity.setCode(TEMP_CODE);
         FacilityEntity savedEntity = facilityRepository.save(entity);
@@ -41,7 +41,7 @@ public class FacilityController {
         facilityRepository.save(savedEntity);
 
         translationRepository.saveAll(
-                TranslationHelper.createTranslationForCodeAndDefaultText(localeRepository, savedEntity.getCode(), name)
+                TranslationHelper.createTranslationForCodeAndDefaultText(localeRepository, savedEntity.getCode(), name.toString())
         );
 
         return ResultDto.ok();
@@ -82,13 +82,13 @@ public class FacilityController {
     @Transactional
     @PostMapping("/{id}")
     @Operation(summary = "Update facility i18n code")
-    public ResultDto update(@PathVariable("id") int id, @RequestBody String facilityCode) {
+    public ResultDto update(@PathVariable("id") int id, @RequestBody Object facilityCode) {
         facilityRepository.findById(id).ifPresentOrElse(facilityEntity -> {
             final List<TranslationEntity> translations = translationRepository.findAllByCode(facilityEntity.getCode());
-            translations.forEach(translation -> translation.setCode(facilityCode));
+            translations.forEach(translation -> translation.setCode(facilityCode.toString()));
             translationRepository.saveAll(translations);
 
-            facilityEntity.setCode(facilityCode);
+            facilityEntity.setCode(facilityCode.toString());
             facilityRepository.save(facilityEntity);
         }, () -> {
             throw new IllegalArgumentException("Facility not found");

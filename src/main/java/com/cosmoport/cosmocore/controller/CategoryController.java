@@ -93,13 +93,13 @@ public class CategoryController {
     @Transactional
     @PostMapping("/{id}")
     @Operation(summary = "Update i18n code")
-    public ResultDto update(@PathVariable("id") int id, @RequestBody String code) {
+    public ResultDto update(@PathVariable("id") int id, @RequestBody Object code) {
         categoryRepository.findById(id).ifPresentOrElse(materialEntity -> {
             final List<TranslationEntity> translations = translationRepository.findAllByCode(materialEntity.getCode());
-            translations.forEach(translation -> translation.setCode(code));
+            translations.forEach(translation -> translation.setCode(code.toString()));
             translationRepository.saveAll(translations);
 
-            materialEntity.setCode(code);
+            materialEntity.setCode(code.toString());
             categoryRepository.save(materialEntity);
         }, () -> {
             throw new IllegalArgumentException("Facility not found");
