@@ -232,6 +232,7 @@ public class TimetableEndpoint {
 
     //FIXME: нужно сделать отдельные запросы для поиска по gate-у и датам
     @GetMapping
+    @Transactional
     public List<EventDtoWithColor> get(@RequestParam(required = false) String date, @RequestParam(required = false) String date2,
                                        @RequestParam(required = false) Integer gateId) {
         final Map<Integer, String> categoryTypeToColorMap = eventTypeCategoryRepository.findAll().stream()
@@ -271,7 +272,11 @@ public class TimetableEndpoint {
                         event.getCost(),
                         event.getPeopleLimit(),
                         event.getContestants(),
-                        event.getDateAdded()))
+                        event.getDateAdded(),
+                        event.getDescription(),
+                        event.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet()),
+                        event.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet())
+                ))
                 .toList();
     }
 
@@ -280,7 +285,8 @@ public class TimetableEndpoint {
     public record EventDtoWithColor(int id, String eventDate, int eventTypeId, String eventColor, int eventStateId,
                                     int eventStatusId, int gateId, int gate2Id, int startTime, int durationTime,
                                     int repeatInterval,
-                                    double cost, int peopleLimit, int contestants, String dateAdded
+                                    double cost, int peopleLimit, int contestants, String dateAdded, String description,
+                                    Set<Integer> materialIds, Set<Integer> facilityIds
     ) {
     }
 
