@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collections;
+
 @RestController
 @RequestMapping("/sync")
 public class SyncEndpoint {
@@ -65,7 +67,9 @@ public class SyncEndpoint {
                         syncAddEvent.event().cost(),
                         syncAddEvent.event().peopleLimit(),
                         syncAddEvent.event().contestants(),
-                        syncAddEvent.event().dateAdded()
+                        syncAddEvent.event().dateAdded(),
+                        Collections.emptySet(),
+                        Collections.emptySet()
                 )
         );
 

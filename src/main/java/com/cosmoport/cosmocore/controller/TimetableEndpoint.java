@@ -162,7 +162,10 @@ public class TimetableEndpoint {
                 event.cost(),
                 event.peopleLimit(),
                 event.contestants(),
-                event.dateAdded()));
+                event.dateAdded(),
+                Collections.emptySet(),
+                Collections.emptySet()
+        ));
 
 
         eventBus.publishEvent(new ReloadMessage(this));

@@ -26,4 +26,7 @@ public class FacilityEntity {
 
     @ManyToMany(mappedBy = "facilities")
     private Set<EventTypeEntity> eventTypes = new HashSet<>();
+
+    @ManyToMany(mappedBy = "facilities")
+    private Set<TimetableEntity> events = new HashSet<>();
 }

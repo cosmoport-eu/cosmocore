@@ -6,6 +6,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Setter
 @Getter
 @Entity
@@ -55,4 +58,17 @@ public class TimetableEntity {
     private int contestants;
     @Column(name = "date_added", insertable = false, updatable = false)
     private String dateAdded;
+
+    @ManyToMany
+    @JoinTable(
+            name = "TIMETABLE__MATERIAL",
+            joinColumns = @JoinColumn(name = "timetable_id"),
+            inverseJoinColumns = @JoinColumn(name = "material_id"))
+    private Set<MaterialEntity> materials = new HashSet<>();
+    @ManyToMany
+    @JoinTable(
+            name = "TIMETABLE__FACILITY",
+            joinColumns = @JoinColumn(name = "timetable_id"),
+            inverseJoinColumns = @JoinColumn(name = "facility_id"))
+    private Set<FacilityEntity> facilities = new HashSet<>();
 }
