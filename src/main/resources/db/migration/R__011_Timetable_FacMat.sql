@@ -1,3 +1,5 @@
+alter table TIMETABLE add column description varchar(2048);
+
 create table TIMETABLE__MATERIAL
 (
     id           INTEGER      NOT NULL PRIMARY KEY AUTOINCREMENT,

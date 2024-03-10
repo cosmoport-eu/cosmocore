@@ -21,9 +21,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/sync")
@@ -56,6 +55,7 @@ public class SyncEndpoint {
                         event.peopleLimit(),
                         event.contestants(),
                         event.dateAdded(),
+                        event.description(),
                         new HashSet<>(),
                         new HashSet<>()
                 )
@@ -73,6 +73,9 @@ public class SyncEndpoint {
         timetableEntity.setCost(event.cost());
         timetableEntity.setPeopleLimit(event.peopleLimit());
         timetableEntity.setContestants(event.contestants());
+        if(event.description() != null) {
+            timetableEntity.setDescription(event.description());
+        }
 
         if (event.materialIds() != null) {
             BindingHelper.updateAttributes(
@@ -108,7 +111,10 @@ public class SyncEndpoint {
                 updatedEntity.getCost(),
                 updatedEntity.getPeopleLimit(),
                 updatedEntity.getContestants(),
-                updatedEntity.getDateAdded()
+                updatedEntity.getDateAdded(),
+                updatedEntity.getDescription(),
+                updatedEntity.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet()),
+                updatedEntity.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet())
         );
     }
 

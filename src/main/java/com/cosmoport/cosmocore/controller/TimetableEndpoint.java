@@ -17,10 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static java.util.function.Predicate.not;
 
 @RestController
 @RequestMapping("/timetable")
@@ -50,6 +47,7 @@ public class TimetableEndpoint {
     }
 
     @GetMapping("/all")
+    @Transactional
     public List<EventDtoResponse> getAll(
             @RequestParam int page,
             @RequestParam int count) {
@@ -73,6 +71,7 @@ public class TimetableEndpoint {
      * @return Two events.
      */
     @GetMapping("/byIdAndOneAfter")
+    @Transactional
     public List<EventDtoResponse> getEvents(@RequestParam("id") int id) {
         final Optional<TimetableEntity> mainEvent = timeTableRepository.findById(id);
         if (mainEvent.isEmpty()) {
@@ -126,8 +125,8 @@ public class TimetableEndpoint {
         return new TimeSuggestionDto(timeTableRepository.getLastTimeForGate(gateId, dateString));
     }
 
-    @PostMapping("/update/event")
     @Transactional
+    @PostMapping("/update/event")
     public EventDtoResponse update(@RequestBody EventDtoRequest event) {
         final TimetableEntity toUpdate = timeTableRepository.findById(event.id()).orElseThrow();
 
@@ -195,6 +194,7 @@ public class TimetableEndpoint {
                 event.peopleLimit(),
                 event.contestants(),
                 event.dateAdded(),
+                event.description(),
                 new HashSet<>(),
                 new HashSet<>()
         ));
@@ -223,7 +223,11 @@ public class TimetableEndpoint {
                 timetableEntity.getCost(),
                 timetableEntity.getPeopleLimit(),
                 timetableEntity.getContestants(),
-                timetableEntity.getDateAdded());
+                timetableEntity.getDateAdded(),
+                timetableEntity.getDescription(),
+                timetableEntity.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet()),
+                timetableEntity.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet())
+        );
     }
 
     //FIXME: нужно сделать отдельные запросы для поиска по gate-у и датам
@@ -296,7 +300,11 @@ public class TimetableEndpoint {
                 timetableEntity.getCost(),
                 timetableEntity.getPeopleLimit(),
                 timetableEntity.getContestants(),
-                timetableEntity.getDateAdded());
+                timetableEntity.getDateAdded(),
+                timetableEntity.getDescription(),
+                timetableEntity.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet()),
+                timetableEntity.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet())
+        );
     }
 
     public record TicketsUpdateRequestDto(int id, int tickets, boolean forceOpen) {

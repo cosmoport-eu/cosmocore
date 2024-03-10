@@ -58,7 +58,8 @@ public class TimetableEntity {
     private int contestants;
     @Column(name = "date_added", insertable = false, updatable = false)
     private String dateAdded;
-
+    @Column(name = "description")
+    private String description;
     @ManyToMany
     @JoinTable(
             name = "TIMETABLE__MATERIAL",

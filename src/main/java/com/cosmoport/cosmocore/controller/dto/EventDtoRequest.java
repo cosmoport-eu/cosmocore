@@ -17,6 +17,7 @@ public record EventDtoRequest(
         int peopleLimit,
         int contestants,
         String dateAdded,
+        String description,
         Set<Integer> materialIds,
         Set<Integer> facilityIds
 ) {
