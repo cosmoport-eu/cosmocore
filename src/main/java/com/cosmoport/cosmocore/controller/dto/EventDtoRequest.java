@@ -1,5 +1,7 @@
 package com.cosmoport.cosmocore.controller.dto;
 
+import java.util.Set;
+
 public record EventDtoRequest(
         int id,
         String eventDate,
@@ -14,6 +16,8 @@ public record EventDtoRequest(
         double cost,
         int peopleLimit,
         int contestants,
-        String dateAdded
+        String dateAdded,
+        Set<Integer> materialIds,
+        Set<Integer> facilityIds
 ) {
 }

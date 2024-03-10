@@ -4,22 +4,23 @@ import com.cosmoport.cosmocore.controller.dto.EventDtoRequest;
 import com.cosmoport.cosmocore.controller.dto.EventDtoResponse;
 import com.cosmoport.cosmocore.controller.dto.ResultDto;
 import com.cosmoport.cosmocore.controller.error.ValidationException;
+import com.cosmoport.cosmocore.controller.helper.BindingHelper;
 import com.cosmoport.cosmocore.events.ReloadMessage;
 import com.cosmoport.cosmocore.events.SyncTimetablesMessage;
-import com.cosmoport.cosmocore.model.EventTypeCategoryEntity;
-import com.cosmoport.cosmocore.model.EventTypeEntity;
-import com.cosmoport.cosmocore.model.TimetableEntity;
-import com.cosmoport.cosmocore.repository.EventTypeCategoryRepository;
-import com.cosmoport.cosmocore.repository.EventTypeRepository;
-import com.cosmoport.cosmocore.repository.TimeTableRepository;
+import com.cosmoport.cosmocore.model.*;
+import com.cosmoport.cosmocore.repository.*;
 import com.cosmoport.cosmocore.service.RemoteSync;
 import com.cosmoport.cosmocore.service.Types;
+import jakarta.transaction.Transactional;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.bind.annotation.*;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static java.util.function.Predicate.not;
 
 @RestController
 @RequestMapping("/timetable")
@@ -28,17 +29,23 @@ public class TimetableEndpoint {
     private final RemoteSync remoteSync;
     private final TimeTableRepository timeTableRepository;
     private final EventTypeRepository eventTypeRepository;
+    private final MaterialRepository materialRepository;
+    private final FacilityRepository facilityRepository;
     private final EventTypeCategoryRepository eventTypeCategoryRepository;
 
     public TimetableEndpoint(ApplicationEventPublisher eventBus,
                              RemoteSync remoteSync,
                              TimeTableRepository timeTableRepository,
                              EventTypeRepository eventTypeRepository,
+                             MaterialRepository materialRepository,
+                             FacilityRepository facilityRepository,
                              EventTypeCategoryRepository eventTypeCategoryRepository) {
         this.eventBus = eventBus;
         this.remoteSync = remoteSync;
         this.timeTableRepository = timeTableRepository;
         this.eventTypeRepository = eventTypeRepository;
+        this.materialRepository = materialRepository;
+        this.facilityRepository = facilityRepository;
         this.eventTypeCategoryRepository = eventTypeCategoryRepository;
     }
 
@@ -120,8 +127,11 @@ public class TimetableEndpoint {
     }
 
     @PostMapping("/update/event")
+    @Transactional
     public EventDtoResponse update(@RequestBody EventDtoRequest event) {
         final TimetableEntity toUpdate = timeTableRepository.findById(event.id()).orElseThrow();
+
+        //TODO привязать материалы и фасилики
 
         toUpdate.setEventDate(event.eventDate());
         toUpdate.setEventTypeId(event.eventTypeId());
@@ -137,6 +147,22 @@ public class TimetableEndpoint {
         toUpdate.setContestants(event.contestants());
         toUpdate.setDateAdded(event.dateAdded());
 
+        if (event.materialIds() != null) {
+            BindingHelper.updateAttributes(
+                    materialRepository.findAllById(event.materialIds()),
+                    toUpdate,
+                    TimetableEntity::getMaterials,
+                    MaterialEntity::getEvents);
+        }
+
+        if (event.facilityIds() != null) {
+            BindingHelper.updateAttributes(
+                    facilityRepository.findAllById(event.facilityIds()),
+                    toUpdate,
+                    TimetableEntity::getFacilities,
+                    FacilityEntity::getEvents);
+        }
+
         EventDtoResponse newEvent = convertToDto(timeTableRepository.save(toUpdate));
 
         eventBus.publishEvent(new ReloadMessage(this));
@@ -147,7 +173,13 @@ public class TimetableEndpoint {
 
 
     @PostMapping
+    @Transactional
     public EventDtoResponse create(@RequestBody final EventDtoRequest event) {
+        final List<MaterialEntity> materials = event.materialIds() == null ? Collections.emptyList() :
+                materialRepository.findAllById(event.materialIds());
+        final List<FacilityEntity> facilities = event.materialIds() == null ? Collections.emptyList() :
+                facilityRepository.findAllById(event.materialIds());
+
         final TimetableEntity timetableEntity = timeTableRepository.save(new TimetableEntity(
                 event.id(),
                 event.eventDate(),
@@ -163,10 +195,17 @@ public class TimetableEndpoint {
                 event.peopleLimit(),
                 event.contestants(),
                 event.dateAdded(),
-                Collections.emptySet(),
-                Collections.emptySet()
+                new HashSet<>(),
+                new HashSet<>()
         ));
 
+        materials.forEach(entity -> entity.getEvents().add(timetableEntity));
+        facilities.forEach(entity -> entity.getEvents().add(timetableEntity));
+
+        timetableEntity.getFacilities().addAll(facilities);
+        timetableEntity.getMaterials().addAll(materials);
+
+        timeTableRepository.save(timetableEntity);
 
         eventBus.publishEvent(new ReloadMessage(this));
         remoteSync.process(Types.CREATE, new RemoteSync.EventIdDto(timetableEntity.getId()));
@@ -231,6 +270,7 @@ public class TimetableEndpoint {
                         event.getDateAdded()))
                 .toList();
     }
+
 
 
     public record EventDtoWithColor(int id, String eventDate, int eventTypeId, String eventColor, int eventStateId,
