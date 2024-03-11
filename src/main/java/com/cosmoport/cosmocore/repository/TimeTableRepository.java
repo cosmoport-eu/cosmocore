@@ -36,4 +36,6 @@ public interface TimeTableRepository extends JpaRepository<TimetableEntity, Inte
             """, nativeQuery = true)
     Optional<TimetableEntity> findNextEventForGate(String eventDate, int gateId, int gate2Id, int startTime, int statusId, int id);
     List<TimetableEntity> findAllByEventDate(String eventDate);
+
+    List<TimetableEntity> findAllByEventDateIsBetween(String eventDateFrom, String eventDateTo);
 }

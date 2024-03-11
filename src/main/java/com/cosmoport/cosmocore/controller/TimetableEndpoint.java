@@ -143,7 +143,7 @@ public class TimetableEndpoint {
         toUpdate.setPeopleLimit(event.peopleLimit());
         toUpdate.setContestants(event.contestants());
         toUpdate.setDateAdded(event.dateAdded());
-        if(event.description() != null) {
+        if (event.description() != null) {
             toUpdate.setDescription(event.description());
         }
 
@@ -231,32 +231,18 @@ public class TimetableEndpoint {
         );
     }
 
-    //FIXME: нужно сделать отдельные запросы для поиска по gate-у и датам
     @GetMapping
     @Transactional
-    public List<EventDtoWithColor> get(@RequestParam(required = false) String date, @RequestParam(required = false) String date2,
+    public List<EventDtoWithColor> get(String date,
+                                       String date2,
                                        @RequestParam(required = false) Integer gateId) {
         final Map<Integer, String> categoryTypeToColorMap = eventTypeCategoryRepository.findAll().stream()
                 .collect(Collectors.toMap(EventTypeCategoryEntity::getId, EventTypeCategoryEntity::getColor));
         final Map<Integer, String> categoryIdToColorMap = eventTypeRepository.findAll().stream()
                 .collect(Collectors.toMap(EventTypeEntity::getId, ete -> categoryTypeToColorMap.get(ete.getCategoryId())));
 
-
-        return timeTableRepository.findAll().stream()
-                .filter(event -> {
-                    if (date == null) {
-                        return true;
-                    } else {
-                        return event.getEventDate().compareTo(date) >= 0;
-                    }
-                })
-                .filter(event -> {
-                    if (date2 == null) {
-                        return event.getGateId().equals(gateId);
-                    } else {
-                        return event.getEventDate().compareTo(date2) <= 0;
-                    }
-                })
+        return timeTableRepository.findAllByEventDateIsBetween(date, date2).stream()
+                .filter(event -> gateId == null || gateId.equals(event.getGateId()))
                 .sorted(Comparator.comparing(TimetableEntity::getEventDate).thenComparing(TimetableEntity::getGateId))
                 .map(event -> new EventDtoWithColor(
                         event.getId(),
@@ -280,7 +266,6 @@ public class TimetableEndpoint {
                 ))
                 .toList();
     }
-
 
 
     public record EventDtoWithColor(int id, String eventDate, int eventTypeId, String eventColor, int eventStateId,
