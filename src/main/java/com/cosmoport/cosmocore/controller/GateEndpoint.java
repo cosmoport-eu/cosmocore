@@ -38,13 +38,13 @@ public class GateEndpoint {
     @Transactional
     @PostMapping
     @Operation(summary = "Создать новые ворота")
-    public ResultDto create(@RequestBody String name) {
+    public ResultDto create(@RequestBody Object name) {
         final GateEntity tempGate = gateRepository.save(new GateEntity("new_gate"));
         tempGate.setCode("gate_" + tempGate.getId());
         final GateEntity newGate = gateRepository.save(tempGate);
 
         translationRepository.saveAll(
-                TranslationHelper.createTranslationForCodeAndDefaultText(localeRepository, newGate.getCode(), name)
+                TranslationHelper.createTranslationForCodeAndDefaultText(localeRepository, newGate.getCode(), name.toString())
         );
 
         return ResultDto.ok();
@@ -89,11 +89,11 @@ public class GateEndpoint {
 
     @PostMapping("/{translationId}")
     @Operation(summary = "Обновить название ворот по id перевода")
-    public ResultDto updateText(@PathVariable int translationId, @RequestBody String text) {
+    public ResultDto updateText(@PathVariable int translationId, @RequestBody Object text) {
         translationRepository.findById(translationId)
                 .ifPresentOrElse(
                         translationEntity -> {
-                            translationEntity.setText(text);
+                            translationEntity.setText(text.toString());
                             translationRepository.save(translationEntity);
                             eventBus.publishEvent(new ReloadMessage(this));
                         },
@@ -107,14 +107,14 @@ public class GateEndpoint {
     @Transactional
     @PostMapping("/code/{gateId}")
     @Operation(summary = "Обновить кодовое обозначение ворот")
-    public ResultDto updateCode(@PathVariable int gateId, @RequestBody String text) {
+    public ResultDto updateCode(@PathVariable int gateId, @RequestBody Object text) {
         gateRepository.findById(gateId)
                 .ifPresentOrElse(
                         gateEntity -> {
                             final List<TranslationEntity> translations =
                                     translationRepository.findAllByCode(gateEntity.getCode());
-                            translations.forEach(translationEntity -> translationEntity.setCode(text));
-                            gateEntity.setCode(text);
+                            translations.forEach(translationEntity -> translationEntity.setCode(text.toString()));
+                            gateEntity.setCode(text.toString());
 
                             gateRepository.save(gateEntity);
                             translationRepository.saveAll(translations);

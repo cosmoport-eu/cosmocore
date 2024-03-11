@@ -4,16 +4,14 @@ import com.cosmoport.cosmocore.controller.dto.EventDtoRequest;
 import com.cosmoport.cosmocore.controller.dto.EventDtoResponse;
 import com.cosmoport.cosmocore.controller.dto.ResultDto;
 import com.cosmoport.cosmocore.controller.error.ValidationException;
+import com.cosmoport.cosmocore.controller.helper.BindingHelper;
 import com.cosmoport.cosmocore.events.ReloadMessage;
 import com.cosmoport.cosmocore.events.SyncTimetablesMessage;
-import com.cosmoport.cosmocore.model.EventTypeCategoryEntity;
-import com.cosmoport.cosmocore.model.EventTypeEntity;
-import com.cosmoport.cosmocore.model.TimetableEntity;
-import com.cosmoport.cosmocore.repository.EventTypeCategoryRepository;
-import com.cosmoport.cosmocore.repository.EventTypeRepository;
-import com.cosmoport.cosmocore.repository.TimeTableRepository;
+import com.cosmoport.cosmocore.model.*;
+import com.cosmoport.cosmocore.repository.*;
 import com.cosmoport.cosmocore.service.RemoteSync;
 import com.cosmoport.cosmocore.service.Types;
+import jakarta.transaction.Transactional;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,21 +26,28 @@ public class TimetableEndpoint {
     private final RemoteSync remoteSync;
     private final TimeTableRepository timeTableRepository;
     private final EventTypeRepository eventTypeRepository;
+    private final MaterialRepository materialRepository;
+    private final FacilityRepository facilityRepository;
     private final EventTypeCategoryRepository eventTypeCategoryRepository;
 
     public TimetableEndpoint(ApplicationEventPublisher eventBus,
                              RemoteSync remoteSync,
                              TimeTableRepository timeTableRepository,
                              EventTypeRepository eventTypeRepository,
+                             MaterialRepository materialRepository,
+                             FacilityRepository facilityRepository,
                              EventTypeCategoryRepository eventTypeCategoryRepository) {
         this.eventBus = eventBus;
         this.remoteSync = remoteSync;
         this.timeTableRepository = timeTableRepository;
         this.eventTypeRepository = eventTypeRepository;
+        this.materialRepository = materialRepository;
+        this.facilityRepository = facilityRepository;
         this.eventTypeCategoryRepository = eventTypeCategoryRepository;
     }
 
     @GetMapping("/all")
+    @Transactional
     public List<EventDtoResponse> getAll(
             @RequestParam int page,
             @RequestParam int count) {
@@ -66,6 +71,7 @@ public class TimetableEndpoint {
      * @return Two events.
      */
     @GetMapping("/byIdAndOneAfter")
+    @Transactional
     public List<EventDtoResponse> getEvents(@RequestParam("id") int id) {
         final Optional<TimetableEntity> mainEvent = timeTableRepository.findById(id);
         if (mainEvent.isEmpty()) {
@@ -119,9 +125,12 @@ public class TimetableEndpoint {
         return new TimeSuggestionDto(timeTableRepository.getLastTimeForGate(gateId, dateString));
     }
 
+    @Transactional
     @PostMapping("/update/event")
     public EventDtoResponse update(@RequestBody EventDtoRequest event) {
         final TimetableEntity toUpdate = timeTableRepository.findById(event.id()).orElseThrow();
+
+        //TODO привязать материалы и фасилики
 
         toUpdate.setEventDate(event.eventDate());
         toUpdate.setEventTypeId(event.eventTypeId());
@@ -137,6 +146,22 @@ public class TimetableEndpoint {
         toUpdate.setContestants(event.contestants());
         toUpdate.setDateAdded(event.dateAdded());
 
+        if (event.materialIds() != null) {
+            BindingHelper.updateAttributes(
+                    materialRepository.findAllById(event.materialIds()),
+                    toUpdate,
+                    TimetableEntity::getMaterials,
+                    MaterialEntity::getEvents);
+        }
+
+        if (event.facilityIds() != null) {
+            BindingHelper.updateAttributes(
+                    facilityRepository.findAllById(event.facilityIds()),
+                    toUpdate,
+                    TimetableEntity::getFacilities,
+                    FacilityEntity::getEvents);
+        }
+
         EventDtoResponse newEvent = convertToDto(timeTableRepository.save(toUpdate));
 
         eventBus.publishEvent(new ReloadMessage(this));
@@ -147,7 +172,13 @@ public class TimetableEndpoint {
 
 
     @PostMapping
+    @Transactional
     public EventDtoResponse create(@RequestBody final EventDtoRequest event) {
+        final List<MaterialEntity> materials = event.materialIds() == null ? Collections.emptyList() :
+                materialRepository.findAllById(event.materialIds());
+        final List<FacilityEntity> facilities = event.materialIds() == null ? Collections.emptyList() :
+                facilityRepository.findAllById(event.materialIds());
+
         final TimetableEntity timetableEntity = timeTableRepository.save(new TimetableEntity(
                 event.id(),
                 event.eventDate(),
@@ -162,8 +193,19 @@ public class TimetableEndpoint {
                 event.cost(),
                 event.peopleLimit(),
                 event.contestants(),
-                event.dateAdded()));
+                event.dateAdded(),
+                event.description(),
+                new HashSet<>(),
+                new HashSet<>()
+        ));
 
+        materials.forEach(entity -> entity.getEvents().add(timetableEntity));
+        facilities.forEach(entity -> entity.getEvents().add(timetableEntity));
+
+        timetableEntity.getFacilities().addAll(facilities);
+        timetableEntity.getMaterials().addAll(materials);
+
+        timeTableRepository.save(timetableEntity);
 
         eventBus.publishEvent(new ReloadMessage(this));
         remoteSync.process(Types.CREATE, new RemoteSync.EventIdDto(timetableEntity.getId()));
@@ -181,11 +223,16 @@ public class TimetableEndpoint {
                 timetableEntity.getCost(),
                 timetableEntity.getPeopleLimit(),
                 timetableEntity.getContestants(),
-                timetableEntity.getDateAdded());
+                timetableEntity.getDateAdded(),
+                timetableEntity.getDescription(),
+                timetableEntity.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet()),
+                timetableEntity.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet())
+        );
     }
 
     //FIXME: нужно сделать отдельные запросы для поиска по gate-у и датам
     @GetMapping
+    @Transactional
     public List<EventDtoWithColor> get(@RequestParam(required = false) String date, @RequestParam(required = false) String date2,
                                        @RequestParam(required = false) Integer gateId) {
         final Map<Integer, String> categoryTypeToColorMap = eventTypeCategoryRepository.findAll().stream()
@@ -225,15 +272,21 @@ public class TimetableEndpoint {
                         event.getCost(),
                         event.getPeopleLimit(),
                         event.getContestants(),
-                        event.getDateAdded()))
+                        event.getDateAdded(),
+                        event.getDescription(),
+                        event.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet()),
+                        event.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet())
+                ))
                 .toList();
     }
+
 
 
     public record EventDtoWithColor(int id, String eventDate, int eventTypeId, String eventColor, int eventStateId,
                                     int eventStatusId, int gateId, int gate2Id, int startTime, int durationTime,
                                     int repeatInterval,
-                                    double cost, int peopleLimit, int contestants, String dateAdded
+                                    double cost, int peopleLimit, int contestants, String dateAdded, String description,
+                                    Set<Integer> materialIds, Set<Integer> facilityIds
     ) {
     }
 
@@ -253,7 +306,11 @@ public class TimetableEndpoint {
                 timetableEntity.getCost(),
                 timetableEntity.getPeopleLimit(),
                 timetableEntity.getContestants(),
-                timetableEntity.getDateAdded());
+                timetableEntity.getDateAdded(),
+                timetableEntity.getDescription(),
+                timetableEntity.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet()),
+                timetableEntity.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet())
+        );
     }
 
     public record TicketsUpdateRequestDto(int id, int tickets, boolean forceOpen) {

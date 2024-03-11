@@ -92,9 +92,9 @@ public class TranslationEndpoint {
 
     @PostMapping("/update/{translationId}")
     public ResultDto updateTranslation(@PathVariable("translationId") int translationId,
-                                       @RequestBody String text) {
+                                       @RequestBody Object text) {
         return new ResultDto(translationRepository.findById(translationId).map(translationEntity -> {
-            translationEntity.setText(text);
+            translationEntity.setText(text.toString());
             translationRepository.save(translationEntity);
             eventBus.publishEvent(new ReloadMessage(this));
             return true;

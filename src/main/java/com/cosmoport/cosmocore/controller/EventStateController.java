@@ -47,14 +47,14 @@ public class EventStateController {
 
     @Transactional
     @PostMapping("/updateCode/{id}")
-    public ResultDto updateCode(@PathVariable int id, @RequestBody String newCode) {
+    public ResultDto updateCode(@PathVariable int id, @RequestBody Object newCode) {
         eventStateRepository.findById(id)
                 .ifPresentOrElse(eventStateEntity -> {
                     final List<TranslationEntity> translations =
                             translationRepository.findAllByCode(eventStateEntity.getCode());
-                    translations.forEach(translation -> translation.setCode(newCode));
+                    translations.forEach(translation -> translation.setCode(newCode.toString()));
 
-                    eventStateEntity.setCode(newCode);
+                    eventStateEntity.setCode(newCode.toString());
                     eventStateRepository.save(eventStateEntity);
                     translationRepository.saveAll(translations);
                 }, () -> {

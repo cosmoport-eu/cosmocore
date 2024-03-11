@@ -1,6 +1,7 @@
 package com.cosmoport.cosmocore.controller;
 
 import com.cosmoport.cosmocore.controller.dto.ResultDto;
+import com.cosmoport.cosmocore.controller.helper.BindingHelper;
 import com.cosmoport.cosmocore.controller.helper.TranslationHelper;
 import com.cosmoport.cosmocore.events.ReloadMessage;
 import com.cosmoport.cosmocore.model.EventTypeEntity;
@@ -89,14 +90,14 @@ public class TimeEventsEndpoint {
             eventType.setParentId(dto.parentId());
 
             if (dto.materialIds() != null) {
-                updateAttributes(
+                BindingHelper.updateAttributes(
                         materialRepository.findAllById(dto.materialIds()),
                         eventType,
                         EventTypeEntity::getMaterials,
                         MaterialEntity::getEventTypes);
             }
             if (dto.facilityIds() != null) {
-                updateAttributes(
+                BindingHelper.updateAttributes(
                         facilityRepository.findAllById(dto.facilityIds()),
                         eventType,
                         EventTypeEntity::getFacilities,
@@ -110,31 +111,6 @@ public class TimeEventsEndpoint {
         });
 
         return ResultDto.ok();
-    }
-
-    private <T> void updateAttributes(List<T> newMaterials,
-                                      EventTypeEntity eventType,
-                                      Function<EventTypeEntity, Collection<T>> materialsGetter,
-                                      Function<T, Set<EventTypeEntity>> eventTypesGetter) {
-        final Collection<T> oldMaterials = materialsGetter.apply(eventType);
-
-        final List<T> materialsToAdd = newMaterials.stream()
-                .filter(not(oldMaterials::contains))
-                .toList();
-
-        final List<T> materialsToDelete = oldMaterials.stream()
-                .filter(not(newMaterials::contains))
-                .toList();
-
-        materialsToAdd.forEach(materialToAdd -> {
-            eventTypesGetter.apply(materialToAdd).add(eventType);
-            materialsGetter.apply(eventType).add(materialToAdd);
-        });
-
-        materialsToDelete.forEach(materialToDelete -> {
-            eventTypesGetter.apply(materialToDelete).remove(eventType);
-            materialsGetter.apply(eventType).remove(materialToDelete);
-        });
     }
 
     @Transactional

@@ -34,7 +34,7 @@ public class MaterialController {
 
     @Transactional
     @PostMapping
-    public ResultDto create(@RequestBody String name) {
+    public ResultDto create(@RequestBody Object name) {
         final MaterialEntity entity = new MaterialEntity();
         entity.setCode(TEMP_CODE);
         MaterialEntity savedEntity = materialRepository.save(entity);
@@ -42,7 +42,7 @@ public class MaterialController {
         materialRepository.save(savedEntity);
 
         translationRepository.saveAll(
-                TranslationHelper.createTranslationForCodeAndDefaultText(localeRepository, savedEntity.getCode(), name)
+                TranslationHelper.createTranslationForCodeAndDefaultText(localeRepository, savedEntity.getCode(), name.toString())
         );
 
         return ResultDto.ok();
@@ -83,13 +83,13 @@ public class MaterialController {
     @Transactional
     @PostMapping("/{id}")
     @Operation(summary = "Update i18n code")
-    public ResultDto update(@PathVariable("id") int id, @RequestBody String materialCode) {
+    public ResultDto update(@PathVariable("id") int id, @RequestBody Object materialCode) {
         materialRepository.findById(id).ifPresentOrElse(materialEntity -> {
             final List<TranslationEntity> translations = translationRepository.findAllByCode(materialEntity.getCode());
-            translations.forEach(translation -> translation.setCode(materialCode));
+            translations.forEach(translation -> translation.setCode(materialCode.toString()));
             translationRepository.saveAll(translations);
 
-            materialEntity.setCode(materialCode);
+            materialEntity.setCode(materialCode.toString());
             materialRepository.save(materialEntity);
         }, () -> {
             throw new IllegalArgumentException("Entity not found");
