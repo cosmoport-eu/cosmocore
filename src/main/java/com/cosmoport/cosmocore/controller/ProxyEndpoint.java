@@ -21,7 +21,7 @@ public class ProxyEndpoint {
     @PostMapping
     public String reactOn(@RequestBody ProxyRequestDto request) {
         if (request.name().equals("fire_gate")) {
-            eventBus.publishEvent(new FireUpGateMessage(this));
+            eventBus.publishEvent(new FireUpGateMessage(this, request.event(), request.type()));
         }
 
         return "{\"result\": \"success\"}";
