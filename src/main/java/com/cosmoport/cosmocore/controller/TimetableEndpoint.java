@@ -130,8 +130,6 @@ public class TimetableEndpoint {
     public EventDtoResponse update(@RequestBody EventDtoRequest event) {
         final TimetableEntity toUpdate = timeTableRepository.findById(event.id()).orElseThrow();
 
-        //TODO привязать материалы и фасилики
-
         toUpdate.setEventDate(event.eventDate());
         toUpdate.setEventTypeId(event.eventTypeId());
         toUpdate.setEventStateId(event.eventStateId());
@@ -145,6 +143,9 @@ public class TimetableEndpoint {
         toUpdate.setPeopleLimit(event.peopleLimit());
         toUpdate.setContestants(event.contestants());
         toUpdate.setDateAdded(event.dateAdded());
+        if(event.description() != null) {
+            toUpdate.setDescription(event.description());
+        }
 
         if (event.materialIds() != null) {
             BindingHelper.updateAttributes(
