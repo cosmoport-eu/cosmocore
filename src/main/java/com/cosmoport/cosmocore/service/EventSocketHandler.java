@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.CloseStatus;
+import org.springframework.web.socket.PongMessage;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -67,7 +68,16 @@ public class EventSocketHandler extends TextWebSocketHandler {
     }
 
 
+    @Override
+    public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
+        log.error("{}", session, exception);
+    }
 
+    @Override
+    protected void handlePongMessage(WebSocketSession session, PongMessage message) throws Exception {
+        log.info("Pong {}, {}", message, session);
+    }
+    
     @EventListener
     public void onReloadMessage(final ReloadMessage message) {
         log.info("[socket] {}", ReloadMessage.TOKEN);

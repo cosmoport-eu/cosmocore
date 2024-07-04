@@ -18,10 +18,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static java.util.function.Predicate.not;
 
 @RestController
 @RequestMapping("/t_events")
