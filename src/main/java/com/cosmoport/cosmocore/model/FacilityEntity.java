@@ -18,6 +18,9 @@ public class FacilityEntity {
     @Column(name = "id")
     private int id;
 
+    @Column(name = "icon")
+    private String icon;
+
     @Column(name = "i18n_code")
     private String code = UUID.randomUUID().toString();
 
