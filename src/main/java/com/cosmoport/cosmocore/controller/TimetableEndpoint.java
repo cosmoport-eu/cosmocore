@@ -29,6 +29,7 @@ public class TimetableEndpoint {
     private final MaterialRepository materialRepository;
     private final FacilityRepository facilityRepository;
     private final EventTypeCategoryRepository eventTypeCategoryRepository;
+    // private final TimetableMaterialRepository timetableMaterialRepository;
 
     public TimetableEndpoint(ApplicationEventPublisher eventBus,
                              RemoteSync remoteSync,
@@ -36,7 +37,9 @@ public class TimetableEndpoint {
                              EventTypeRepository eventTypeRepository,
                              MaterialRepository materialRepository,
                              FacilityRepository facilityRepository,
-                             EventTypeCategoryRepository eventTypeCategoryRepository) {
+                             EventTypeCategoryRepository eventTypeCategoryRepository
+                             //TimetableMaterialRepository timetableMaterialRepository
+                             ) {
         this.eventBus = eventBus;
         this.remoteSync = remoteSync;
         this.timeTableRepository = timeTableRepository;
@@ -44,6 +47,7 @@ public class TimetableEndpoint {
         this.materialRepository = materialRepository;
         this.facilityRepository = facilityRepository;
         this.eventTypeCategoryRepository = eventTypeCategoryRepository;
+        // this.timetableMaterialRepository = timetableMaterialRepository;
     }
 
     @GetMapping("/all")
@@ -198,6 +202,7 @@ public class TimetableEndpoint {
                 event.description(),
                 new HashSet<>(),
                 new HashSet<>()
+                //, null
         ));
 
         materials.forEach(entity -> entity.getEvents().add(timetableEntity));
@@ -228,6 +233,7 @@ public class TimetableEndpoint {
                 timetableEntity.getDescription(),
                 timetableEntity.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet()),
                 timetableEntity.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet())
+                //, null
         );
     }
 
@@ -296,6 +302,7 @@ public class TimetableEndpoint {
                 timetableEntity.getDescription(),
                 timetableEntity.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet()),
                 timetableEntity.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet())
+                //, null
         );
     }
 

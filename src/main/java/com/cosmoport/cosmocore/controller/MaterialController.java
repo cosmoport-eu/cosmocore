@@ -9,11 +9,13 @@ import com.cosmoport.cosmocore.repository.LocaleRepository;
 import com.cosmoport.cosmocore.repository.MaterialRepository;
 import com.cosmoport.cosmocore.repository.TranslationRepository;
 import io.swagger.v3.oas.annotations.Operation;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
+@Slf4j
 @RestController
 @RequestMapping("/material")
 public class MaterialController {
@@ -65,7 +67,7 @@ public class MaterialController {
                 .map(entity -> {
                     final TranslationEntity translation =
                             translationRepository.findByLocaleIdAndCode(localeId, entity.getCode()).orElseThrow();
-                    return new MaterialDto(entity.getId(), entity.getCode(), translation.getText(), entity.isDisabled());
+                    return new MaterialDto(entity.getId(), entity.getIcon(), entity.getCode(), translation.getText(), entity.isDisabled());
                 }).toList();
     }
 
@@ -76,7 +78,7 @@ public class MaterialController {
         return materialRepository.findAll().stream()
                 .filter(entity -> isActive == null || entity.isDisabled() != isActive)
                 .map(entity ->
-                        new MaterialTranslationsDto(entity.getId(), entity.getCode(), entity.isDisabled(),
+                        new MaterialTranslationsDto(entity.getId(), entity.getIcon(), entity.getCode(), entity.isDisabled(),
                                 TranslationHelper.getTranslationsByCode(translationRepository, entity.getCode()))).toList();
     }
 
@@ -84,6 +86,7 @@ public class MaterialController {
     @PostMapping("/{id}")
     @Operation(summary = "Update i18n code")
     public ResultDto update(@PathVariable("id") int id, @RequestBody Object materialCode) {
+        // log.info("[!!!]Update material with id: {} and text: {}", id, materialCode);
         materialRepository.findById(id).ifPresentOrElse(materialEntity -> {
             final List<TranslationEntity> translations = translationRepository.findAllByCode(materialEntity.getCode());
             translations.forEach(translation -> translation.setCode(materialCode.toString()));
@@ -97,9 +100,23 @@ public class MaterialController {
         return ResultDto.ok();
     }
 
-    public record MaterialDto(int id, String code, String name, boolean isDisabled) {
+    @Transactional
+    @PostMapping("/{id}/icon")
+    @Operation(summary = "Update material icon")
+    public ResultDto updateIcon(@PathVariable("id") int id, @RequestBody Object materialIcon) {
+        log.info("[!!!]Update material with id: {} and text: {}", id, materialIcon);
+        materialRepository.findById(id).ifPresentOrElse(materialEntity -> {
+            materialEntity.setIcon(materialIcon.toString());
+            materialRepository.save(materialEntity);
+        }, () -> {
+            throw new IllegalArgumentException("Entity not found");
+        });
+        return ResultDto.ok();
     }
 
-    public record MaterialTranslationsDto(int id, String code, boolean isDisabled, List<TranslationDto> translations) {
+    public record MaterialDto(int id, String icon, String code, String name, boolean isDisabled) {
+    }
+
+    public record MaterialTranslationsDto(int id, String icon, String code, boolean isDisabled, List<TranslationDto> translations) {
     }
 }

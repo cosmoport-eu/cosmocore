@@ -58,6 +58,7 @@ public class SyncEndpoint {
                         event.description(),
                         new HashSet<>(),
                         new HashSet<>()
+                        //, null
                 )
         );
 
@@ -115,6 +116,7 @@ public class SyncEndpoint {
                 updatedEntity.getDescription(),
                 updatedEntity.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet()),
                 updatedEntity.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet())
+                //, null
         );
     }
 

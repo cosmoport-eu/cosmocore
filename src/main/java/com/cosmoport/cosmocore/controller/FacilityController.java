@@ -64,7 +64,7 @@ public class FacilityController {
                 .map(entity -> {
                     final TranslationEntity translation =
                             translationRepository.findByLocaleIdAndCode(localeId, entity.getCode()).orElseThrow();
-                    return new FacilityDto(entity.getId(), entity.getCode(), translation.getText(), entity.isDisabled());
+                    return new FacilityDto(entity.getId(), entity.getIcon(), entity.getCode(), translation.getText(), entity.isDisabled());
                 }).toList();
     }
 
@@ -75,7 +75,7 @@ public class FacilityController {
         return facilityRepository.findAll().stream()
                 .filter(entity -> isActive == null || entity.isDisabled() != isActive)
                 .map(entity ->
-                        new FacilityDtoWithTranslations(entity.getId(), entity.getCode(), entity.isDisabled(),
+                        new FacilityDtoWithTranslations(entity.getId(), entity.getIcon(), entity.getCode(), entity.isDisabled(),
                                 TranslationHelper.getTranslationsByCode(translationRepository, entity.getCode()))).toList();
     }
 
@@ -96,9 +96,22 @@ public class FacilityController {
         return ResultDto.ok();
     }
 
-    public record FacilityDto(int id, String code, String name, boolean isDisabled) {
+    @Transactional
+    @PostMapping("/{id}/icon")
+    @Operation(summary = "Update facility icon")
+    public ResultDto updateIcon(@PathVariable("id") int id, @RequestBody Object facilityIcon) {
+        facilityRepository.findById(id).ifPresentOrElse(facilityEntity -> {
+            facilityEntity.setIcon(facilityIcon.toString());
+            facilityRepository.save(facilityEntity);
+        }, () -> {
+            throw new IllegalArgumentException("Facility not found");
+        });
+        return ResultDto.ok();
     }
 
-    public record FacilityDtoWithTranslations(int id, String code, boolean isDisabled, List<TranslationDto> translations) {
+    public record FacilityDto(int id, String icon, String code, String name, boolean isDisabled) {
+    }
+
+    public record FacilityDtoWithTranslations(int id, String icon, String code, boolean isDisabled, List<TranslationDto> translations) {
     }
 }
