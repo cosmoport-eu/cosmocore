@@ -31,4 +31,7 @@ public class MaterialEntity {
 
     @ManyToMany(mappedBy = "materials")
     private Set<TimetableEntity> events = new HashSet<>();
+
+    // @OneToMany(mappedBy = "materials")
+    // Set<MaterialQtyEntity> materialQty;
 }

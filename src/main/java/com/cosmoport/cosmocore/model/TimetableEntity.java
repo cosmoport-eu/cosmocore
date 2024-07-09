@@ -74,4 +74,6 @@ public class TimetableEntity {
     private Set<FacilityEntity> facilities = new HashSet<>();
 //     @ManyToMany(mappedBy = "TIMETABLE", cascade = CascadeType.ALL)
 //     private Set<TimetableMaterialEntity> timetableMaterials = new HashSet<>();
+//     @ManyToMany(mappedBy = "timetable")
+//     Set<MaterialQtyEntity> materialQty;
 }

@@ -58,7 +58,7 @@ public class SyncEndpoint {
                         event.description(),
                         new HashSet<>(),
                         new HashSet<>()
-                        //, null
+                        // new HashSet<>()
                 )
         );
 

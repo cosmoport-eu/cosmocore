@@ -12,6 +12,8 @@ import com.cosmoport.cosmocore.repository.*;
 import com.cosmoport.cosmocore.service.RemoteSync;
 import com.cosmoport.cosmocore.service.Types;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +21,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestController
 @RequestMapping("/timetable")
 public class TimetableEndpoint {
@@ -29,7 +32,7 @@ public class TimetableEndpoint {
     private final MaterialRepository materialRepository;
     private final FacilityRepository facilityRepository;
     private final EventTypeCategoryRepository eventTypeCategoryRepository;
-    // private final TimetableMaterialRepository timetableMaterialRepository;
+    private final MaterialQtyRepository timetableMaterialRepository;
 
     public TimetableEndpoint(ApplicationEventPublisher eventBus,
                              RemoteSync remoteSync,
@@ -37,8 +40,8 @@ public class TimetableEndpoint {
                              EventTypeRepository eventTypeRepository,
                              MaterialRepository materialRepository,
                              FacilityRepository facilityRepository,
-                             EventTypeCategoryRepository eventTypeCategoryRepository
-                             //TimetableMaterialRepository timetableMaterialRepository
+                             EventTypeCategoryRepository eventTypeCategoryRepository,
+                             MaterialQtyRepository timetableMaterialRepository
                              ) {
         this.eventBus = eventBus;
         this.remoteSync = remoteSync;
@@ -47,9 +50,9 @@ public class TimetableEndpoint {
         this.materialRepository = materialRepository;
         this.facilityRepository = facilityRepository;
         this.eventTypeCategoryRepository = eventTypeCategoryRepository;
-        // this.timetableMaterialRepository = timetableMaterialRepository;
+        this.timetableMaterialRepository = timetableMaterialRepository;
     }
-
+    
     @GetMapping("/all")
     @Transactional
     public List<EventDtoResponse> getAll(
@@ -62,7 +65,9 @@ public class TimetableEndpoint {
                         .limit(count)
                         .map(this::convertToDto)
                         .toList();
-
+        // final List<TimetableMaterialEntity> materials = timetableMaterialRepository.findAll();
+        // log.info("[#########################]All timetable materials: {}", materials);
+        // System.out.printf("[#########################]All timetable events:  {}", materials);
         // We assume that this method will be called on every timetable app opening
         eventBus.publishEvent(new SyncTimetablesMessage(this));
         return events;
@@ -202,7 +207,7 @@ public class TimetableEndpoint {
                 event.description(),
                 new HashSet<>(),
                 new HashSet<>()
-                //, null
+                // new HashSet<>()
         ));
 
         materials.forEach(entity -> entity.getEvents().add(timetableEntity));
@@ -246,6 +251,13 @@ public class TimetableEndpoint {
                 .collect(Collectors.toMap(EventTypeCategoryEntity::getId, EventTypeCategoryEntity::getColor));
         final Map<Integer, String> categoryIdToColorMap = eventTypeRepository.findAll().stream()
                 .collect(Collectors.toMap(EventTypeEntity::getId, ete -> categoryTypeToColorMap.get(ete.getCategoryId())));
+        
+
+        // final List<TimetableMaterialEntity> tMaterials = timetableMaterialRepository.getTimetableMaterials(158);
+        // final  = tMaterials.forEach(item->log.info("[#########################]All timetable materials: {}", item.getQty()));
+
+        // log.info("[#########################]All timetable materials: {}", tMaterials);
+        // System.out.printf("[#########################]All timetable events:  {}", materials);
 
         return timeTableRepository.findAllByEventDateIsBetween(date, date2).stream()
                 .filter(event -> gateId == null || gateId.equals(event.getGateId()))
@@ -269,6 +281,7 @@ public class TimetableEndpoint {
                         event.getDescription(),
                         event.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet()),
                         event.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet())
+                        // event.getMaterialQty()
                 ))
                 .toList();
     }
@@ -278,7 +291,7 @@ public class TimetableEndpoint {
                                     int eventStatusId, int gateId, int gate2Id, int startTime, int durationTime,
                                     int repeatInterval,
                                     double cost, int peopleLimit, int contestants, String dateAdded, String description,
-                                    Set<Integer> materialIds, Set<Integer> facilityIds
+                                    Set<Integer> materialIds, Set<Integer> facilityIds // , Set<MaterialQtyEntity> qty
     ) {
     }
 

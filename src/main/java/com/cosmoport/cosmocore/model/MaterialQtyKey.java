@@ -11,10 +11,14 @@ import java.io.Serializable;
 @AllArgsConstructor 
 @NoArgsConstructor
 @Embeddable
-public class TimetableMaterialId implements Serializable {  
-    @Column(name = "material_id")
-    private Integer materialId;
+public class MaterialQtyKey implements Serializable {
 
     @Column(name = "timetable_id")
-    private Integer timetableId;
+    Long timetableId;
+
+    @Column(name = "material_id")
+    Long materialId;
+
+    // standard constructors, getters, and setters
+    // hashcode and equals implementation
 }
