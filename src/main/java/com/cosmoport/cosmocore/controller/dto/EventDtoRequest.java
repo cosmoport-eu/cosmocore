@@ -2,6 +2,8 @@ package com.cosmoport.cosmocore.controller.dto;
 
 import java.util.Set;
 
+import com.cosmoport.cosmocore.model.QtyEntity;
+
 public record EventDtoRequest(
         int id,
         String eventDate,
@@ -19,6 +21,7 @@ public record EventDtoRequest(
         String dateAdded,
         String description,
         Set<Integer> materialIds,
-        Set<Integer> facilityIds
+        Set<Integer> facilityIds,
+        Set<QtyEntity> qty
 ) {
 }

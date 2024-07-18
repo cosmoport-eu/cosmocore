@@ -72,8 +72,7 @@ public class TimetableEntity {
             joinColumns = @JoinColumn(name = "timetable_id"),
             inverseJoinColumns = @JoinColumn(name = "facility_id"))
     private Set<FacilityEntity> facilities = new HashSet<>();
-//     @ManyToMany(mappedBy = "TIMETABLE", cascade = CascadeType.ALL)
-//     private Set<TimetableMaterialEntity> timetableMaterials = new HashSet<>();
-//     @ManyToMany(mappedBy = "timetable")
-//     Set<MaterialQtyEntity> materialQty;
+    
+    @OneToMany(mappedBy = "timetable"/*, cascade = CascadeType.ALL, orphanRemoval = true*/)
+    private Set<QtyEntity> qty;
 }

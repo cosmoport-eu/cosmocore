@@ -15,7 +15,9 @@ import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -32,7 +34,7 @@ public class TimetableEndpoint {
     private final MaterialRepository materialRepository;
     private final FacilityRepository facilityRepository;
     private final EventTypeCategoryRepository eventTypeCategoryRepository;
-    private final MaterialQtyRepository timetableMaterialRepository;
+    private final QtyRepository qtyRepository;
 
     public TimetableEndpoint(ApplicationEventPublisher eventBus,
                              RemoteSync remoteSync,
@@ -41,7 +43,7 @@ public class TimetableEndpoint {
                              MaterialRepository materialRepository,
                              FacilityRepository facilityRepository,
                              EventTypeCategoryRepository eventTypeCategoryRepository,
-                             MaterialQtyRepository timetableMaterialRepository
+                             QtyRepository qtyRepository
                              ) {
         this.eventBus = eventBus;
         this.remoteSync = remoteSync;
@@ -50,7 +52,7 @@ public class TimetableEndpoint {
         this.materialRepository = materialRepository;
         this.facilityRepository = facilityRepository;
         this.eventTypeCategoryRepository = eventTypeCategoryRepository;
-        this.timetableMaterialRepository = timetableMaterialRepository;
+        this.qtyRepository = qtyRepository;
     }
     
     @GetMapping("/all")
@@ -65,13 +67,37 @@ public class TimetableEndpoint {
                         .limit(count)
                         .map(this::convertToDto)
                         .toList();
-        // final List<TimetableMaterialEntity> materials = timetableMaterialRepository.findAll();
+        // final List<TimetableMaterialEntity> materials = qtyRepository.findAll();
         // log.info("[#########################]All timetable materials: {}", materials);
         // System.out.printf("[#########################]All timetable events:  {}", materials);
         // We assume that this method will be called on every timetable app opening
         eventBus.publishEvent(new SyncTimetablesMessage(this));
         return events;
     }
+
+    @Transactional
+    @GetMapping("/{id}/qty")
+    public ResponseEntity<Object> getQty(@PathVariable int id){
+        // , @RequestBody QtyEntity qty, @RequestBody MaterialEntity material
+        Optional<TimetableEntity> timetableOptional = timeTableRepository.findById(id);
+        // Optional<MaterialEntity> materialOptional = materialRepository.findById(material.getId());
+
+
+        // if(!materialOptional.isPresent()){
+            // throw new UserNotFoundException("id-" + id);
+        //}
+
+        TimetableEntity timetable = timetableOptional.get();
+        // qty.setTimetable(timetable);
+        // qty.setMaterial(material);
+
+        // qtyRepository.save(qty);
+
+        // URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(borrow.getId()).toUri();
+
+        return ResponseEntity.ok(timetable);//.ok(qtyRepository.toString());
+    }
+
 
     /**
      * Gets the event with {@code id} and one event after that for same gate.
@@ -172,6 +198,11 @@ public class TimetableEndpoint {
                     FacilityEntity::getEvents);
         }
 
+        final Set<QtyEntity> qts = event.qty();
+        for(QtyEntity qty : qts) {
+            qtyRepository.setQtyById(qty.getQty(), event.id(), qty.getMaterial_id());
+        }
+
         EventDtoResponse newEvent = convertToDto(timeTableRepository.save(toUpdate));
 
         eventBus.publishEvent(new ReloadMessage(this));
@@ -206,8 +237,8 @@ public class TimetableEndpoint {
                 event.dateAdded(),
                 event.description(),
                 new HashSet<>(),
+                new HashSet<>(),
                 new HashSet<>()
-                // new HashSet<>()
         ));
 
         materials.forEach(entity -> entity.getEvents().add(timetableEntity));
@@ -216,7 +247,10 @@ public class TimetableEndpoint {
         timetableEntity.getFacilities().addAll(facilities);
         timetableEntity.getMaterials().addAll(materials);
 
-        timeTableRepository.save(timetableEntity);
+        final Set<QtyEntity> qts = event.qty();
+        for(QtyEntity qty : qts) {
+            qtyRepository.setQtyById(qty.getQty(), timetableEntity.getId(), qty.getMaterial_id());
+        }
 
         eventBus.publishEvent(new ReloadMessage(this));
         remoteSync.process(Types.CREATE, new RemoteSync.EventIdDto(timetableEntity.getId()));
@@ -237,8 +271,8 @@ public class TimetableEndpoint {
                 timetableEntity.getDateAdded(),
                 timetableEntity.getDescription(),
                 timetableEntity.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet()),
-                timetableEntity.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet())
-                //, null
+                timetableEntity.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet()),
+                timetableEntity.getQty()
         );
     }
 
@@ -253,7 +287,7 @@ public class TimetableEndpoint {
                 .collect(Collectors.toMap(EventTypeEntity::getId, ete -> categoryTypeToColorMap.get(ete.getCategoryId())));
         
 
-        // final List<TimetableMaterialEntity> tMaterials = timetableMaterialRepository.getTimetableMaterials(158);
+        // final List<TimetableMaterialEntity> tMaterials = qtyRepository.getTimetableMaterials(158);
         // final  = tMaterials.forEach(item->log.info("[#########################]All timetable materials: {}", item.getQty()));
 
         // log.info("[#########################]All timetable materials: {}", tMaterials);
@@ -280,8 +314,9 @@ public class TimetableEndpoint {
                         event.getDateAdded(),
                         event.getDescription(),
                         event.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet()),
-                        event.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet())
-                        // event.getMaterialQty()
+                        event.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet()),
+                        // event.getQty().stream().map().collect(Collectors.toSet())
+                        qtyRepository.getTimetableMaterials(event.getId())
                 ))
                 .toList();
     }
@@ -291,7 +326,7 @@ public class TimetableEndpoint {
                                     int eventStatusId, int gateId, int gate2Id, int startTime, int durationTime,
                                     int repeatInterval,
                                     double cost, int peopleLimit, int contestants, String dateAdded, String description,
-                                    Set<Integer> materialIds, Set<Integer> facilityIds // , Set<MaterialQtyEntity> qty
+                                    Set<Integer> materialIds, Set<Integer> facilityIds, List<QtyEntity> qty
     ) {
     }
 
@@ -314,8 +349,8 @@ public class TimetableEndpoint {
                 timetableEntity.getDateAdded(),
                 timetableEntity.getDescription(),
                 timetableEntity.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet()),
-                timetableEntity.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet())
-                //, null
+                timetableEntity.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet()),
+                timetableEntity.getQty()
         );
     }
 

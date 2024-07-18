@@ -57,8 +57,8 @@ public class SyncEndpoint {
                         event.dateAdded(),
                         event.description(),
                         new HashSet<>(),
+                        new HashSet<>(),
                         new HashSet<>()
-                        // new HashSet<>()
                 )
         );
 
@@ -115,8 +115,8 @@ public class SyncEndpoint {
                 updatedEntity.getDateAdded(),
                 updatedEntity.getDescription(),
                 updatedEntity.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet()),
-                updatedEntity.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet())
-                //, null
+                updatedEntity.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet()),
+                null
         );
     }
 
