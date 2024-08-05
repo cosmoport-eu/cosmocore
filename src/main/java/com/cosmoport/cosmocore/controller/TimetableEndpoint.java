@@ -286,14 +286,7 @@ public class TimetableEndpoint {
         final Map<Integer, String> categoryIdToColorMap = eventTypeRepository.findAll().stream()
                 .collect(Collectors.toMap(EventTypeEntity::getId, ete -> categoryTypeToColorMap.get(ete.getCategoryId())));
         
-
-        // final List<TimetableMaterialEntity> tMaterials = qtyRepository.getTimetableMaterials(158);
-        // final  = tMaterials.forEach(item->log.info("[#########################]All timetable materials: {}", item.getQty()));
-
-        // log.info("[#########################]All timetable materials: {}", tMaterials);
-        // System.out.printf("[#########################]All timetable events:  {}", materials);
-
-        return timeTableRepository.findAllByEventDateIsBetween(date, date2).stream()
+        List<TimetableEndpoint.EventDtoWithColor> list = timeTableRepository.findAllByEventDateIsBetween(date, date2).stream()
                 .filter(event -> gateId == null || gateId.equals(event.getGateId()))
                 .sorted(Comparator.comparing(TimetableEntity::getEventDate).thenComparing(TimetableEntity::getGateId))
                 .map(event -> new EventDtoWithColor(
@@ -315,10 +308,11 @@ public class TimetableEndpoint {
                         event.getDescription(),
                         event.getMaterials().stream().map(MaterialEntity::getId).collect(Collectors.toSet()),
                         event.getFacilities().stream().map(FacilityEntity::getId).collect(Collectors.toSet()),
-                        // event.getQty().stream().map().collect(Collectors.toSet())
                         qtyRepository.getTimetableMaterials(event.getId())
                 ))
                 .toList();
+        // System.out.printf("[#########################]LIST:  {} \n", list);
+        return list;
     }
 
 
